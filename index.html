@@ -730,8 +730,9 @@ function renderMapa() {
     let dayCells = '';
     for (let d = 1; d <= days; d++) {
       const we = isWeekend(year, month - 1, d);
-      const cellKey = `${d}`;
-      const cell = (data[`${key}_t${ti}`] || {})[cellKey] || {};
+      const dayKey = String(d);
+      const cellStoreKey = key + '_t' + ti;
+      const cell = (data[cellStoreKey] || {})[dayKey] || {};
       const status = cell.status || '';
       let cls = 'day-cell';
       if (we) cls += ' weekend';
@@ -746,8 +747,8 @@ function renderMapa() {
         <span style="color:#1565c0;text-decoration:underline dotted;">${workerNames || '— editar —'}</span>
       </td>
       ${dayCells}
-      <td style="padding:2px 6px;white-space:nowrap;display:flex;gap:4px;">
-        <button class="btn btn-outline btn-sm" onclick="openEditTarefaModal('${key}',${ti})" title="Editar tarefa">✏️</button>
+      <td style="padding:2px 6px;white-space:nowrap;text-align:center;">
+        <button class="btn btn-outline btn-sm" onclick="openEditTarefaModal('${key}',${ti})" title="Editar tarefa" style="margin-bottom:2px;">✏️</button>
         <button class="btn btn-danger btn-sm" onclick="removeTask('${key}',${ti})">✕</button>
       </td>
     </tr>`;
@@ -796,12 +797,13 @@ function renderMapa() {
 
 function toggleCell(key, ti, d) {
   if (!state.tasks[key]) return;
-  const cellKey = `${key}_t${ti}`;
+  const cellKey = key + '_t' + ti;
   if (!state.tasks[cellKey]) state.tasks[cellKey] = {};
-  const cur = (state.tasks[cellKey][d] || {}).status || '';
-  if (cur === '') state.tasks[cellKey][d] = { status: 'planned' };
-  else if (cur === 'planned') state.tasks[cellKey][d] = { status: 'not-done' };
-  else delete state.tasks[cellKey][d];
+  const dayKey = String(d);
+  const cur = (state.tasks[cellKey][dayKey] || {}).status || '';
+  if (cur === '') state.tasks[cellKey][dayKey] = { status: 'planned' };
+  else if (cur === 'planned') state.tasks[cellKey][dayKey] = { status: 'not-done' };
+  else delete state.tasks[cellKey][dayKey];
   save();
   renderMapa();
 }
