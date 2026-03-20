@@ -731,14 +731,12 @@ function renderMapa() {
     for (let d = 1; d <= days; d++) {
       const we = isWeekend(year, month - 1, d);
       const dayKey = String(d);
-      const cellStoreKey = key + '_t' + ti;
-      const cell = (data[cellStoreKey] || {})[dayKey] || {};
-      const status = cell.status || '';
+      const status = (t.days && t.days[dayKey]) || '';
       let cls = 'day-cell';
       if (we) cls += ' weekend';
       if (status === 'planned') cls += ' planned';
       if (status === 'not-done') cls += ' not-done';
-      dayCells += `<td class="${cls}" onclick="toggleCell('${key}','${ti}','${d}')" title="${d} ${MONTHS_PT[month-1]}"></td>`;
+      dayCells += `<td class="${cls}" onclick="toggleCell('${key}',${ti},'${dayKey}')" title="${d} ${MONTHS_PT[month-1]}"></td>`;
     }
 
     return `<tr>
@@ -795,15 +793,14 @@ function renderMapa() {
   </div>`;
 }
 
-function toggleCell(key, ti, d) {
-  if (!state.tasks[key]) return;
-  const cellKey = key + '_t' + ti;
-  if (!state.tasks[cellKey]) state.tasks[cellKey] = {};
-  const dayKey = String(d);
-  const cur = (state.tasks[cellKey][dayKey] || {}).status || '';
-  if (cur === '') state.tasks[cellKey][dayKey] = { status: 'planned' };
-  else if (cur === 'planned') state.tasks[cellKey][dayKey] = { status: 'not-done' };
-  else delete state.tasks[cellKey][dayKey];
+function toggleCell(key, ti, dayKey) {
+  if (!state.tasks[key] || !state.tasks[key]._tasks[ti]) return;
+  const task = state.tasks[key]._tasks[ti];
+  if (!task.days) task.days = {};
+  const cur = task.days[dayKey] || '';
+  if (cur === '') task.days[dayKey] = 'planned';
+  else if (cur === 'planned') task.days[dayKey] = 'not-done';
+  else delete task.days[dayKey];
   save();
   renderMapa();
 }
