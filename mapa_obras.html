@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa de Obras</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f4f1eb; color: #1a1a1a; min-height: 100vh; }
+
+  :root {
+    --green: #4caf50; --green-light: #e8f5e9; --green-dark: #2e7d32;
+    --red: #e53935; --red-light: #ffebee; --red-dark: #b71c1c;
+    --gray: #9e9e9e; --gray-light: #f5f5f5; --gray-dark: #424242;
+    --weekend: #e0e0e0;
+    --border: #d0cdc4;
+    --blue: #1565c0; --blue-light: #e3f2fd;
+    --amber: #e65100; --amber-light: #fff3e0;
+    --card-bg: #ffffff;
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+
+  header {
+    background: #1a1a2e;
+    color: white;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+  }
+  header h1 { font-size: 20px; font-weight: 600; letter-spacing: 0.5px; }
+  header h1 span { color: #f9a825; }
+
+  .top-bar {
+    background: white;
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .top-bar select, .top-bar input[type="month"] {
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    background: white;
+    cursor: pointer;
+    min-width: 160px;
+  }
+  .btn {
+    padding: 7px 16px;
+    border-radius: 6px;
+    border: none;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: #1a1a2e; color: white; }
+  .btn-primary:hover { background: #2d2d4e; }
+  .btn-success { background: var(--green); color: white; }
+  .btn-success:hover { background: var(--green-dark); }
+  .btn-danger { background: var(--red); color: white; }
+  .btn-danger:hover { background: var(--red-dark); }
+  .btn-outline { background: white; border: 1px solid var(--border); color: #333; }
+  .btn-outline:hover { background: #f5f5f5; }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+  .main { padding: 20px 24px; }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #666;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--border);
+  }
+  .tab {
+    padding: 8px 18px;
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: #666;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.15s;
+  }
+  .tab.active { color: #1a1a2e; border-bottom-color: #1a1a2e; }
+  .tab:hover:not(.active) { color: #333; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* OBRA CARDS */
+  .obras-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .obra-card {
+    background: white;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: var(--shadow);
+  }
+  .obra-card:hover { border-color: #1a1a2e; }
+  .obra-card.selected { border-color: #1a1a2e; background: #f0f0f8; }
+  .obra-card .obra-name { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .obra-card .obra-client { font-size: 13px; color: #666; margin-bottom: 10px; }
+  .obra-card .obra-stats { display: flex; gap: 10px; flex-wrap: wrap; }
+  .stat-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+  }
+  .stat-badge.green { background: var(--green-light); color: var(--green-dark); }
+  .stat-badge.red { background: var(--red-light); color: var(--red-dark); }
+  .stat-badge.gray { background: #f5f5f5; color: #555; }
+
+  /* MAPA GANTT */
+  .mapa-wrapper {
+    background: white;
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .mapa-header-bar {
+    background: #1a1a2e;
+    color: white;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .mapa-header-bar h2 { font-size: 15px; font-weight: 600; }
+
+  .gantt-scroll { overflow-x: auto; }
+  .gantt-table { border-collapse: collapse; min-width: 100%; font-size: 12px; }
+  .gantt-table th, .gantt-table td { border: 1px solid #e0e0e0; white-space: nowrap; }
+
+  .gantt-table thead tr:first-child th { background: #1a1a2e; color: white; text-align: center; font-weight: 600; padding: 6px 4px; }
+  .gantt-table thead tr:nth-child(2) th { background: #2d2d4e; color: #ccc; text-align: center; font-weight: 600; padding: 5px 4px; font-size: 11px; }
+  .gantt-table thead tr:last-child th {
+    background: #3d3d5e; color: #ddd; text-align: center;
+    padding: 4px 2px; font-size: 11px; min-width: 28px;
+  }
+  .gantt-table thead tr:last-child th.weekend { background: #555; color: #aaa; }
+
+  .gantt-table tbody td { padding: 3px 4px; text-align: left; }
+  .gantt-table tbody td.task-col { font-weight: 500; font-size: 12px; padding: 4px 10px; min-width: 160px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+  .gantt-table tbody td.worker-col { color: #555; font-size: 11px; min-width: 110px; }
+  .gantt-table tbody tr:hover td { background: #fafafa; }
+  .gantt-table tbody tr:nth-child(even) td { background: #fafff8; }
+  .gantt-table tbody tr:nth-child(even):hover td { background: #f5f5f5; }
+
+  .day-cell {
+    width: 28px; min-width: 28px; text-align: center; padding: 2px !important;
+    cursor: pointer; transition: opacity 0.1s;
+    border-right: 1px solid #e0e0e0 !important;
+  }
+  .day-cell.weekend { background: #f5f5f5 !important; }
+  .day-cell.planned { background: var(--green) !important; cursor: pointer; }
+  .day-cell.not-done { background: var(--red) !important; cursor: pointer; }
+  .day-cell:hover { opacity: 0.7; }
+
+  .legend {
+    padding: 12px 16px;
+    display: flex;
+    gap: 20px;
+    border-top: 1px solid #eee;
+    background: #fafafa;
+    flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #555; }
+  .legend-dot { width: 14px; height: 14px; border-radius: 3px; }
+
+  /* MODALS */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5); z-index: 1000;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: white; border-radius: 12px; padding: 24px;
+    max-width: 500px; width: 90%; max-height: 85vh; overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  }
+  .modal h3 { font-size: 17px; font-weight: 600; margin-bottom: 18px; color: #1a1a2e; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 5px; color: #444; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 8px 12px; border: 1px solid var(--border);
+    border-radius: 6px; font-size: 14px; transition: border 0.15s;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none; border-color: #1a1a2e;
+  }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+  /* TRABALHADORES */
+  .workers-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .worker-card {
+    background: white; border-radius: 8px; padding: 14px;
+    border: 1px solid var(--border); box-shadow: var(--shadow);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .worker-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: #1a1a2e; color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 14px; flex-shrink: 0;
+  }
+  .worker-info .worker-name { font-size: 14px; font-weight: 600; }
+  .worker-info .worker-role { font-size: 12px; color: #666; }
+
+  /* EXPORT */
+  .export-bar {
+    display: flex; gap: 8px; padding: 10px 16px;
+    background: #f9f9f9; border-bottom: 1px solid #eee;
+    flex-wrap: wrap;
+  }
+
+  .month-label { font-size: 14px; font-weight: 600; color: #1a1a2e; text-transform: uppercase; }
+
+  @media print {
+    header, .top-bar, .tabs, .export-bar, .btn { display: none !important; }
+    .mapa-wrapper { box-shadow: none; }
+    .gantt-table { font-size: 10px; }
+  }
+
+  .empty-state {
+    text-align: center; padding: 48px 24px; color: #999;
+  }
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { font-size: 15px; }
+
+  .info-bar {
+    background: var(--blue-light); border-left: 3px solid var(--blue);
+    padding: 8px 14px; font-size: 13px; color: #1565c0;
+    border-radius: 0 6px 6px 0; margin-bottom: 16px;
+  }
+
+  .workers-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .worker-tag {
+    background: #e8eaf6; color: #283593; font-size: 11px;
+    padding: 2px 8px; border-radius: 10px; font-weight: 500;
+  }
+  .worker-tag .remove { cursor: pointer; margin-left: 4px; color: #999; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏗 Mapa de <span>Obras</span></h1>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+    <span id="current-date" style="font-size:13px;color:#ccc;"></span>
+    <button class="btn btn-success" onclick="openModal('obra-modal')">+ Nova Obra</button>
+    <button class="btn btn-outline" style="color:white;border-color:rgba(255,255,255,0.3)" onclick="openModal('worker-modal')">+ Trabalhador</button>
+    <button class="btn btn-outline" style="color:#f9a825;border-color:#f9a825;font-size:12px;" onclick="exportBackup()" title="Guardar cópia de segurança de todos os dados">💾 Backup</button>
+    <button class="btn btn-outline" style="color:#90caf9;border-color:#90caf9;font-size:12px;" onclick="openModal('import-modal')" title="Restaurar dados de um backup anterior">📂 Restaurar</button>
+  </div>
+</header>
+
+<div class="top-bar">
+  <select id="obra-select" onchange="renderMapa()">
+    <option value="">-- Selecionar Obra --</option>
+  </select>
+  <input type="month" id="month-picker" onchange="renderMapa()">
+  <button class="btn btn-outline" onclick="window.print()">🖨 Imprimir</button>
+  <button class="btn btn-outline" onclick="exportCSV()">📄 Exportar CSV</button>
+</div>
+
+<div class="main">
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('mapa')">📅 Mapa Mensal</button>
+    <button class="tab" onclick="switchTab('obras')">🏗 Obras</button>
+    <button class="tab" onclick="switchTab('trabalhadores')">👷 Trabalhadores</button>
+  </div>
+
+  <!-- MAPA PANEL -->
+  <div class="panel active" id="panel-mapa">
+    <div id="mapa-container">
+      <div class="empty-state">
+        <div class="icon">📅</div>
+        <p>Selecione uma obra e mês para visualizar o mapa de trabalhos.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- OBRAS PANEL -->
+  <div class="panel" id="panel-obras">
+    <div class="info-bar">Clique numa obra para selecionar e adicionar tarefas no Mapa Mensal.</div>
+    <div class="obras-grid" id="obras-grid">
+      <div class="empty-state"><div class="icon">🏗</div><p>Nenhuma obra criada ainda.</p></div>
+    </div>
+    <button class="btn btn-primary" onclick="openModal('obra-modal')">+ Adicionar Nova Obra</button>
+  </div>
+
+  <!-- TRABALHADORES PANEL -->
+  <div class="panel" id="panel-trabalhadores">
+    <div class="workers-list" id="workers-list">
+      <div class="empty-state"><div class="icon">👷</div><p>Nenhum trabalhador adicionado.</p></div>
+    </div>
+    <button class="btn btn-primary" onclick="openModal('worker-modal')">+ Adicionar Trabalhador</button>
+  </div>
+</div>
+
+<!-- MODAL: Nova Obra -->
+<div class="modal-overlay" id="obra-modal">
+  <div class="modal">
+    <h3>Nova Obra</h3>
+    <div class="form-group">
+      <label>Nome da Obra *</label>
+      <input type="text" id="obra-nome" placeholder="ex: Tiago Barreiro">
+    </div>
+    <div class="form-group">
+      <label>Morada</label>
+      <input type="text" id="obra-morada" placeholder="ex: Rua das Flores, Lisboa">
+    </div>
+    <div class="form-group">
+      <label>Cliente</label>
+      <input type="text" id="obra-cliente" placeholder="ex: João Silva">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('obra-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="addObra()">Criar Obra</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Nova Tarefa -->
+<div class="modal-overlay" id="tarefa-modal">
+  <div class="modal">
+    <h3>Adicionar Tarefa</h3>
+    <div class="form-group">
+      <label>Designação da Tarefa *</label>
+      <input type="text" id="tarefa-nome" placeholder="ex: Pinturas, Ceramicos...">
+    </div>
+    <div class="form-group">
+      <label>Empresa / Trabalhadores</label>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <select id="tarefa-worker-select" style="flex:1">
+          <option value="">-- Selecionar --</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="addWorkerToTask()">Adicionar</button>
+      </div>
+      <div class="workers-tags" id="task-workers-tags"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('tarefa-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="addTarefa()">Adicionar Tarefa</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Editar Tarefa -->
+<div class="modal-overlay" id="edit-tarefa-modal">
+  <div class="modal">
+    <h3>✏️ Editar Tarefa</h3>
+    <div class="form-group">
+      <label>Designação da Tarefa *</label>
+      <input type="text" id="edit-tarefa-nome" placeholder="ex: Pinturas, Ceramicos...">
+    </div>
+    <div class="form-group">
+      <label>Empresa / Trabalhadores</label>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <select id="edit-tarefa-worker-select" style="flex:1">
+          <option value="">-- Selecionar --</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="addWorkerToEditTask()">Adicionar</button>
+      </div>
+      <div class="workers-tags" id="edit-task-workers-tags"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('edit-tarefa-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEditTarefa()">Guardar Alterações</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Trabalhador -->
+<div class="modal-overlay" id="worker-modal">
+  <div class="modal">
+    <h3>Novo Trabalhador / Empresa</h3>
+    <div class="form-group">
+      <label>Nome *</label>
+      <input type="text" id="worker-nome" placeholder="ex: Paulo, Velvetground...">
+    </div>
+    <div class="form-group">
+      <label>Especialidade</label>
+      <input type="text" id="worker-esp" placeholder="ex: Pintor, Carpinteiro...">
+    </div>
+    <div class="form-group">
+      <label>Contacto</label>
+      <input type="text" id="worker-tel" placeholder="ex: 912 345 678">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('worker-modal')">Cancelar</button>
+      <button class="btn btn-success" onclick="addWorker()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Importar Backup -->
+<div class="modal-overlay" id="import-modal">
+  <div class="modal">
+    <h3>📂 Restaurar Backup</h3>
+    <div style="background:#fff8e1;border-left:3px solid #f9a825;padding:10px 14px;border-radius:0 6px 6px 0;font-size:13px;color:#e65100;margin-bottom:16px;">
+      ⚠️ Isto irá <strong>substituir todos os dados atuais</strong>. Faça um backup primeiro se necessário.
+    </div>
+    <div class="form-group">
+      <label>Colar o conteúdo do ficheiro de backup (.json)</label>
+      <textarea id="import-json" rows="8" placeholder='Cole aqui o conteúdo do ficheiro backup_obras_....json' style="font-family:monospace;font-size:12px;resize:vertical;"></textarea>
+    </div>
+    <div style="text-align:center;color:#999;font-size:12px;margin:-8px 0 12px;">— ou —</div>
+    <div class="form-group">
+      <label>Carregar ficheiro .json</label>
+      <input type="file" id="import-file" accept=".json" onchange="loadBackupFile(event)" style="font-size:13px;padding:6px;">
+    </div>
+    <div id="import-status" style="font-size:13px;margin-bottom:8px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('import-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="importBackup()">Restaurar Dados</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+let state = JSON.parse(localStorage.getItem('mapaObrasState') || 'null') || {
+  obras: [],
+  workers: [
+    { id: 'w1', nome: 'VELVETGROUND', esp: 'Construção Geral', tel: '' },
+    { id: 'w2', nome: 'PAULO', esp: 'Pintor', tel: '' },
+    { id: 'w3', nome: 'CARPINTEIRO', esp: 'Carpintaria', tel: '' },
+    { id: 'w4', nome: 'DANILO', esp: 'Electricidade', tel: '' }
+  ],
+  tasks: {}
+};
+
+let taskWorkers = [];
+
+function save() {
+  localStorage.setItem('mapaObrasState', JSON.stringify(state));
+}
+
+function exportBackup() {
+  const now = new Date();
+  const stamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+  const data = JSON.stringify(state, null, 2);
+  const blob = new Blob([data], { type: 'application/json;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `backup_obras_${stamp}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function loadBackupFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('import-json').value = e.target.result;
+    document.getElementById('import-status').innerHTML = `<span style="color:green;">✓ Ficheiro carregado: ${file.name}</span>`;
+  };
+  reader.readAsText(file);
+}
+
+function importBackup() {
+  const raw = document.getElementById('import-json').value.trim();
+  if (!raw) { alert('Cole ou carregue um ficheiro de backup primeiro.'); return; }
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed.obras || !parsed.workers) {
+      document.getElementById('import-status').innerHTML = '<span style="color:red;">✗ Ficheiro inválido — não parece um backup desta aplicação.</span>';
+      return;
+    }
+    if (!confirm(`Restaurar backup com ${parsed.obras.length} obra(s) e ${parsed.workers.length} trabalhador(es)?\n\nOs dados atuais serão substituídos.`)) return;
+    state = parsed;
+    save();
+    closeModal('import-modal');
+    document.getElementById('import-json').value = '';
+    document.getElementById('import-file').value = '';
+    document.getElementById('import-status').innerHTML = '';
+    refreshObraSelect();
+    renderObras();
+    renderWorkers();
+    renderMapa();
+    alert('✓ Dados restaurados com sucesso!');
+  } catch(e) {
+    document.getElementById('import-status').innerHTML = '<span style="color:red;">✗ JSON inválido — verifique se copiou o ficheiro completo.</span>';
+  }
+}
+
+function init() {
+  const now = new Date();
+  document.getElementById('month-picker').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('current-date').textContent = `${MONTHS_PT[now.getMonth()]} ${now.getFullYear()}`;
+  refreshObraSelect();
+  renderObras();
+  renderWorkers();
+}
+
+function refreshObraSelect() {
+  const sel = document.getElementById('obra-select');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">-- Selecionar Obra --</option>';
+  state.obras.forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o.id; opt.textContent = o.nome;
+    sel.appendChild(opt);
+  });
+  if (cur) sel.value = cur;
+}
+
+function addObra() {
+  const nome = document.getElementById('obra-nome').value.trim();
+  if (!nome) { alert('Nome da obra obrigatório'); return; }
+  const o = {
+    id: 'obra_' + Date.now(),
+    nome,
+    morada: document.getElementById('obra-morada').value.trim(),
+    cliente: document.getElementById('obra-cliente').value.trim()
+  };
+  state.obras.push(o);
+  save();
+  closeModal('obra-modal');
+  document.getElementById('obra-nome').value = '';
+  document.getElementById('obra-morada').value = '';
+  document.getElementById('obra-cliente').value = '';
+  refreshObraSelect();
+  renderObras();
+}
+
+function renderObras() {
+  const grid = document.getElementById('obras-grid');
+  if (!state.obras.length) {
+    grid.innerHTML = '<div class="empty-state"><div class="icon">🏗</div><p>Nenhuma obra criada ainda.</p></div>';
+    return;
+  }
+  const sel = document.getElementById('obra-select').value;
+  grid.innerHTML = state.obras.map(o => {
+    const tasks = getAllTasksForObra(o.id);
+    const planned = tasks.filter(t => t.status === 'planned').length;
+    const notDone = tasks.filter(t => t.status === 'not-done').length;
+    return `<div class="obra-card ${sel===o.id?'selected':''}" onclick="selectObra('${o.id}')">
+      <div class="obra-name">${o.nome}</div>
+      <div class="obra-client">${o.cliente || o.morada || 'Sem info'}</div>
+      <div class="obra-stats">
+        <span class="stat-badge green">✓ ${planned} a realizar</span>
+        ${notDone ? `<span class="stat-badge red">✗ ${notDone} em atraso</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function getAllTasksForObra(obraId) {
+  const out = [];
+  const prefix = obraId + '_';
+  Object.keys(state.tasks).forEach(k => {
+    if (k.startsWith(prefix)) {
+      const entries = state.tasks[k];
+      Object.values(entries).forEach(v => {
+        if (v.status) out.push(v);
+      });
+    }
+  });
+  return out;
+}
+
+function selectObra(id) {
+  document.getElementById('obra-select').value = id;
+  renderMapa();
+  switchTab('mapa');
+}
+
+function renderWorkers() {
+  const list = document.getElementById('workers-list');
+  if (!state.workers.length) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">👷</div><p>Nenhum trabalhador adicionado.</p></div>';
+    return;
+  }
+  list.innerHTML = state.workers.map(w => {
+    const initials = w.nome.split(' ').map(p => p[0]).join('').substring(0,2).toUpperCase();
+    return `<div class="worker-card">
+      <div class="worker-avatar">${initials}</div>
+      <div class="worker-info">
+        <div class="worker-name">${w.nome}</div>
+        <div class="worker-role">${w.esp || 'Trabalhador'}${w.tel ? ' · ' + w.tel : ''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addWorker() {
+  const nome = document.getElementById('worker-nome').value.trim();
+  if (!nome) { alert('Nome obrigatório'); return; }
+  state.workers.push({
+    id: 'w_' + Date.now(),
+    nome,
+    esp: document.getElementById('worker-esp').value.trim(),
+    tel: document.getElementById('worker-tel').value.trim()
+  });
+  save();
+  closeModal('worker-modal');
+  document.getElementById('worker-nome').value = '';
+  document.getElementById('worker-esp').value = '';
+  document.getElementById('worker-tel').value = '';
+  renderWorkers();
+}
+
+function getDaysInMonth(year, month) {
+  return new Date(year, month + 1, 0).getDate();
+}
+
+function isWeekend(year, month, day) {
+  const d = new Date(year, month, day).getDay();
+  return d === 0 || d === 6;
+}
+
+function getWeeks(year, month) {
+  const days = getDaysInMonth(year, month);
+  const weeks = [];
+  let week = 1, start = 1;
+  for (let d = 1; d <= days; d++) {
+    const dow = new Date(year, month, d).getDay();
+    if (dow === 6 && d < days) {
+      const nextMon = d + 2;
+      if (weeks.length === 0) weeks.push({ num: week, start, end: d });
+      else weeks.push({ num: week, start, end: d });
+      start = d + 1;
+      week++;
+    }
+  }
+  if (start <= days) weeks.push({ num: week, start, end: days });
+  return weeks;
+}
+
+function taskKey(obraId, monthStr) { return obraId + '_' + monthStr; }
+
+function renderMapa() {
+  const obraId = document.getElementById('obra-select').value;
+  const monthVal = document.getElementById('month-picker').value;
+  const container = document.getElementById('mapa-container');
+
+  if (!obraId || !monthVal) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📅</div><p>Selecione uma obra e mês para visualizar o mapa.</p></div>';
+    return;
+  }
+
+  const obra = state.obras.find(o => o.id === obraId);
+  const [year, month] = monthVal.split('-').map(Number);
+  const monthStr = monthVal;
+  const days = getDaysInMonth(year, month - 1);
+  const key = taskKey(obraId, monthStr);
+  if (!state.tasks[key]) state.tasks[key] = { _tasks: [] };
+  const data = state.tasks[key];
+
+  const weeks = [];
+  let week = 1, wStart = 1;
+  for (let d = 1; d <= days; d++) {
+    const dow = new Date(year, month - 1, d).getDay();
+    if (dow === 0 && d > 1) {
+      weeks.push({ num: week, start: wStart, end: d - 1 });
+      wStart = d; week++;
+    }
+    if (d === days) weeks.push({ num: week, start: wStart, end: d });
+  }
+
+  // Build week header
+  let weekCols = '';
+  weeks.forEach(w => {
+    const span = w.end - w.start + 1;
+    weekCols += `<th colspan="${span}" style="text-align:center;padding:5px;">SEMANA ${w.num}</th>`;
+  });
+
+  // Day number header
+  let dayCols = '';
+  for (let d = 1; d <= days; d++) {
+    const we = isWeekend(year, month - 1, d);
+    dayCols += `<th class="${we ? 'weekend' : ''}">${d}</th>`;
+  }
+
+  // Day name header
+  let dayNameCols = '';
+  for (let d = 1; d <= days; d++) {
+    const dow = new Date(year, month - 1, d).getDay();
+    const we = dow === 0 || dow === 6;
+    dayNameCols += `<th class="${we ? 'weekend' : ''}" style="font-size:9px;color:${we?'#888':'#aaa'}">${DAYS_PT[dow]}</th>`;
+  }
+
+  const tasks = data._tasks || [];
+
+  let rows = tasks.map((t, ti) => {
+    const workerNames = (t.workers || []).map(wid => {
+      const w = state.workers.find(x => x.id === wid);
+      return w ? w.nome : wid;
+    }).join(', ');
+
+    let dayCells = '';
+    for (let d = 1; d <= days; d++) {
+      const we = isWeekend(year, month - 1, d);
+      const cellKey = `${d}`;
+      const cell = (data[`${key}_t${ti}`] || {})[cellKey] || {};
+      const status = cell.status || '';
+      let cls = 'day-cell';
+      if (we) cls += ' weekend';
+      if (status === 'planned') cls += ' planned';
+      if (status === 'not-done') cls += ' not-done';
+      dayCells += `<td class="${cls}" onclick="toggleCell('${key}','${ti}','${d}')" title="${d} ${MONTHS_PT[month-1]}"></td>`;
+    }
+
+    return `<tr>
+      <td class="task-col">${t.nome}</td>
+      <td class="worker-col" style="cursor:pointer;" onclick="openEditTarefaModal('${key}',${ti})" title="Clique para editar empresa/trabalhadores">
+        <span style="color:#1565c0;text-decoration:underline dotted;">${workerNames || '— editar —'}</span>
+      </td>
+      ${dayCells}
+      <td style="padding:2px 6px;white-space:nowrap;display:flex;gap:4px;">
+        <button class="btn btn-outline btn-sm" onclick="openEditTarefaModal('${key}',${ti})" title="Editar tarefa">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="removeTask('${key}',${ti})">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  if (!tasks.length) {
+    rows = `<tr><td colspan="${days + 3}" style="text-align:center;color:#999;padding:20px;font-size:13px;">Sem tarefas. Clique em "+ Adicionar Tarefa" para começar.</td></tr>`;
+  }
+
+  container.innerHTML = `
+  <div class="mapa-wrapper">
+    <div class="mapa-header-bar">
+      <div>
+        <h2>${obra.nome} &mdash; <span class="month-label">${MONTHS_PT[month-1]} ${year}</span></h2>
+        ${obra.cliente ? `<div style="font-size:12px;color:#aaa;margin-top:2px;">Cliente: ${obra.cliente}</div>` : ''}
+      </div>
+      <button class="btn btn-success btn-sm" onclick="openTarefaModal('${key}')">+ Adicionar Tarefa</button>
+    </div>
+    <div class="export-bar">
+      <div style="font-size:13px;color:#555;flex:1">
+        <b>${tasks.length}</b> tarefa(s) · Clique numa célula para alternar: vazio → <b style="color:var(--green)">verde</b> (a realizar) → <b style="color:var(--red)">vermelho</b> (não realizado) → vazio
+      </div>
+    </div>
+    <div class="gantt-scroll">
+      <table class="gantt-table">
+        <thead>
+          <tr>
+            <th rowspan="3" style="min-width:160px;text-align:left;padding:6px 10px;">MAPA DE TRABALHOS</th>
+            <th rowspan="3" style="min-width:110px;text-align:left;padding:6px 10px;">EMPRESA</th>
+            ${weekCols}
+            <th rowspan="3" style="min-width:36px;">✕</th>
+          </tr>
+          <tr>${dayCols}</tr>
+          <tr>${dayNameCols}</tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Trabalho a realizar</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Trabalho não realizado</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#e0e0e0"></div> Fim de semana</div>
+    </div>
+  </div>`;
+}
+
+function toggleCell(key, ti, d) {
+  if (!state.tasks[key]) return;
+  const cellKey = `${key}_t${ti}`;
+  if (!state.tasks[cellKey]) state.tasks[cellKey] = {};
+  const cur = (state.tasks[cellKey][d] || {}).status || '';
+  if (cur === '') state.tasks[cellKey][d] = { status: 'planned' };
+  else if (cur === 'planned') state.tasks[cellKey][d] = { status: 'not-done' };
+  else delete state.tasks[cellKey][d];
+  save();
+  renderMapa();
+}
+
+function removeTask(key, ti) {
+  if (!confirm('Remover esta tarefa?')) return;
+  state.tasks[key]._tasks.splice(ti, 1);
+  save();
+  renderMapa();
+}
+
+let currentTaskKey = '';
+let editTaskIndex = -1;
+let editTaskWorkers = [];
+
+function openEditTarefaModal(key, ti) {
+  currentTaskKey = key;
+  editTaskIndex = ti;
+  const task = state.tasks[key]._tasks[ti];
+  editTaskWorkers = [...(task.workers || [])];
+
+  document.getElementById('edit-tarefa-nome').value = task.nome;
+
+  const sel = document.getElementById('edit-tarefa-worker-select');
+  sel.innerHTML = '<option value="">-- Selecionar --</option>';
+  state.workers.forEach(w => {
+    const o = document.createElement('option');
+    o.value = w.id; o.textContent = w.nome;
+    sel.appendChild(o);
+  });
+
+  renderEditTaskWorkerTags();
+  openModal('edit-tarefa-modal');
+}
+
+function addWorkerToEditTask() {
+  const sel = document.getElementById('edit-tarefa-worker-select');
+  const id = sel.value;
+  if (!id || editTaskWorkers.includes(id)) return;
+  editTaskWorkers.push(id);
+  renderEditTaskWorkerTags();
+}
+
+function removeWorkerFromEditTask(id) {
+  editTaskWorkers = editTaskWorkers.filter(x => x !== id);
+  renderEditTaskWorkerTags();
+}
+
+function renderEditTaskWorkerTags() {
+  const tags = document.getElementById('edit-task-workers-tags');
+  tags.innerHTML = editTaskWorkers.map(id => {
+    const w = state.workers.find(x => x.id === id);
+    return `<span class="worker-tag">${w ? w.nome : id} <span class="remove" onclick="removeWorkerFromEditTask('${id}')">✕</span></span>`;
+  }).join('');
+}
+
+function saveEditTarefa() {
+  const nome = document.getElementById('edit-tarefa-nome').value.trim();
+  if (!nome) { alert('Nome da tarefa obrigatório'); return; }
+  state.tasks[currentTaskKey]._tasks[editTaskIndex].nome = nome;
+  state.tasks[currentTaskKey]._tasks[editTaskIndex].workers = [...editTaskWorkers];
+  save();
+  closeModal('edit-tarefa-modal');
+  renderMapa();
+  renderObras();
+}
+
+function openTarefaModal(key) {
+  currentTaskKey = key;
+  taskWorkers = [];
+  renderTaskWorkerTags();
+  const sel = document.getElementById('tarefa-worker-select');
+  sel.innerHTML = '<option value="">-- Selecionar --</option>';
+  state.workers.forEach(w => {
+    const o = document.createElement('option');
+    o.value = w.id; o.textContent = w.nome;
+    sel.appendChild(o);
+  });
+  openModal('tarefa-modal');
+}
+
+function addWorkerToTask() {
+  const sel = document.getElementById('tarefa-worker-select');
+  const id = sel.value;
+  if (!id || taskWorkers.includes(id)) return;
+  taskWorkers.push(id);
+  renderTaskWorkerTags();
+}
+
+function removeWorkerFromTask(id) {
+  taskWorkers = taskWorkers.filter(x => x !== id);
+  renderTaskWorkerTags();
+}
+
+function renderTaskWorkerTags() {
+  const tags = document.getElementById('task-workers-tags');
+  tags.innerHTML = taskWorkers.map(id => {
+    const w = state.workers.find(x => x.id === id);
+    return `<span class="worker-tag">${w ? w.nome : id} <span class="remove" onclick="removeWorkerFromTask('${id}')">✕</span></span>`;
+  }).join('');
+}
+
+function addTarefa() {
+  const nome = document.getElementById('tarefa-nome').value.trim();
+  if (!nome) { alert('Nome da tarefa obrigatório'); return; }
+  if (!state.tasks[currentTaskKey]) state.tasks[currentTaskKey] = { _tasks: [] };
+  if (!state.tasks[currentTaskKey]._tasks) state.tasks[currentTaskKey]._tasks = [];
+  state.tasks[currentTaskKey]._tasks.push({ nome, workers: [...taskWorkers] });
+  save();
+  closeModal('tarefa-modal');
+  document.getElementById('tarefa-nome').value = '';
+  taskWorkers = [];
+  renderMapa();
+  renderObras();
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const names = ['mapa', 'obras', 'trabalhadores'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.panel').forEach((p, i) => {
+    const ids = ['panel-mapa', 'panel-obras', 'panel-trabalhadores'];
+    p.classList.toggle('active', ids[i] === 'panel-' + name);
+  });
+}
+
+function exportCSV() {
+  const obraId = document.getElementById('obra-select').value;
+  const monthVal = document.getElementById('month-picker').value;
+  if (!obraId || !monthVal) { alert('Selecione obra e mês'); return; }
+  const obra = state.obras.find(o => o.id === obraId);
+  const [year, month] = monthVal.split('-').map(Number);
+  const days = getDaysInMonth(year, month - 1);
+  const key = taskKey(obraId, monthVal);
+  const data = state.tasks[key] || { _tasks: [] };
+  const tasks = data._tasks || [];
+
+  let csv = `Obra,${obra.nome}\nMês,${MONTHS_PT[month-1]} ${year}\n\n`;
+  csv += 'Tarefa,Trabalhadores,' + Array.from({length: days}, (_,i) => i+1).join(',') + '\n';
+
+  tasks.forEach((t, ti) => {
+    const workerNames = (t.workers || []).map(wid => {
+      const w = state.workers.find(x => x.id === wid);
+      return w ? w.nome : wid;
+    }).join(' / ');
+    const cells = Array.from({length: days}, (_, i) => {
+      const d = i + 1;
+      if (isWeekend(year, month - 1, d)) return 'FDS';
+      const cell = (data[`${key}_t${ti}`] || {})[String(d)] || {};
+      if (cell.status === 'planned') return 'A REALIZAR';
+      if (cell.status === 'not-done') return 'NAO REALIZADO';
+      return '';
+    });
+    csv += `"${t.nome}","${workerNames}",${cells.join(',')}\n`;
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `mapa_${obra.nome}_${monthVal}.csv`;
+  a.click();
+}
+
+init();
+</script>
+</body>
+</html>
