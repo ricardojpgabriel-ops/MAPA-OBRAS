@@ -161,7 +161,7 @@
 
   .gantt-scroll { overflow-x: auto; }
   .gantt-table { border-collapse: collapse; min-width: 100%; font-size: 12px; table-layout: auto; }
-  .gantt-table th, .gantt-table td { border: 1px solid #e0e0e0; white-space: nowrap; }
+  .gantt-table th, .gantt-table td { border: 1px solid #e0e0e0; white-space: nowrap; overflow: hidden; }
 
   .gantt-table thead tr:first-child th { background: #1a1a2e; color: white; text-align: center; font-weight: 600; padding: 6px 4px; }
   .gantt-table thead tr:nth-child(2) th { background: #2d2d4e; color: #ccc; text-align: center; font-weight: 600; padding: 5px 4px; font-size: 11px; }
@@ -249,28 +249,27 @@
   .month-label { font-size: 14px; font-weight: 600; color: #1a1a2e; text-transform: uppercase; }
 
   @media print {
-    @page { size: A4 landscape; margin: 8mm; }
-    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+    @page { size: A4 landscape; margin: 6mm; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     body { background: white !important; }
     header, .top-bar, .tabs, .export-bar, .btn, .legend, #panel-obras, #panel-trabalhadores, .mapa-header-bar { display: none !important; }
     .main { padding: 0 !important; }
     .mapa-wrapper { box-shadow: none !important; border-radius: 0 !important; }
     #print-page-header { display: block !important; }
     .gantt-scroll { overflow: visible !important; }
-    .gantt-table { font-size: 11px !important; border-collapse: collapse !important; table-layout: auto !important; }
-    .gantt-table th, .gantt-table td { border: 1px solid #bbb !important; padding: 3px 4px !important; }
-    .gantt-table thead tr:first-child th { background: #1a1a2e !important; color: white !important; font-size: 11px !important; }
-    .gantt-table thead tr:nth-child(2) th { background: #2d2d4e !important; color: #eee !important; font-size: 13px !important; }
-    .gantt-table thead tr:last-child th { background: #3d3d5e !important; color: #ddd !important; font-size: 11px !important; }
+    .gantt-table { border-collapse: collapse !important; table-layout: auto !important; width: auto !important; }
+    .gantt-table th, .gantt-table td { border: 1px solid #bbb !important; white-space: nowrap !important; overflow: visible !important; text-overflow: clip !important; }
+    .gantt-table thead tr:first-child th { background: #1a1a2e !important; color: white !important; }
+    .gantt-table thead tr:nth-child(2) th { background: #2d2d4e !important; color: #eee !important; }
+    .gantt-table thead tr:last-child th { background: #3d3d5e !important; color: #ddd !important; }
     .gantt-table thead tr:last-child th.weekend { background: #555 !important; color: #bbb !important; }
-    .task-col { white-space: nowrap !important; padding: 4px 8px !important; font-size: 11px !important; }
-    .worker-col { white-space: nowrap !important; padding: 4px 6px !important; font-size: 10px !important; }
-    .day-cell { width: 22px !important; min-width: 22px !important; max-width: 22px !important; padding: 2px !important; }
+    .task-col { white-space: nowrap !important; overflow: visible !important; }
+    .worker-col { white-space: nowrap !important; overflow: visible !important; }
+    .day-cell { width: 20px !important; min-width: 20px !important; max-width: 20px !important; padding: 2px 1px !important; text-align: center !important; }
     .day-cell.planned { background-color: #4caf50 !important; }
     .day-cell.not-done { background-color: #e53935 !important; }
     .day-cell.weekend { background-color: #d0d0d0 !important; }
     .col-hidden-print { display: none !important; }
-    .gantt-table tbody td { font-size: 12px !important; }
     .gantt-table tbody td:last-child { display: none !important; }
   }
 
@@ -367,15 +366,15 @@
       <label style="font-size:13px;font-weight:600;margin-bottom:12px;display:block;">Tamanho do texto na impressão:</label>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
         <span style="font-size:12px;color:#555;min-width:70px;">Tarefas</span>
-        <input type="range" id="col-task-width" min="60" max="220" value="130" step="5" oninput="document.getElementById('col-task-val').textContent=this.value+'px'" style="flex:1;">
-        <span id="col-task-val" style="font-size:12px;color:#333;min-width:40px;text-align:right;">130px</span>
+        <input type="range" id="col-task-width" min="60" max="220" value="130" step="5" oninput="document.getElementById('col-task-val').textContent=(Math.round(7+(this.value-60)/160*7))+'px'" style="flex:1;">
+        <span id="col-task-val" style="font-size:12px;color:#333;min-width:40px;text-align:right;">11px</span>
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
         <span style="font-size:12px;color:#555;min-width:70px;">Empresa</span>
-        <input type="range" id="col-worker-width" min="40" max="160" value="80" step="5" oninput="document.getElementById('col-worker-val').textContent=this.value+'px'" style="flex:1;">
-        <span id="col-worker-val" style="font-size:12px;color:#333;min-width:40px;text-align:right;">80px</span>
+        <input type="range" id="col-worker-width" min="40" max="160" value="80" step="5" oninput="document.getElementById('col-worker-val').textContent=(Math.round(6+(this.value-40)/120*6))+'px'" style="flex:1;">
+        <span id="col-worker-val" style="font-size:12px;color:#333;min-width:40px;text-align:right;">9px</span>
       </div>
-      <div style="font-size:11px;color:#999;margin-top:8px;">💡 Mova para a direita = texto maior. Para mês completo use valores menores.</div>
+      <div style="font-size:11px;color:#999;margin-top:8px;">💡 Mova para a esquerda = texto menor = cabe mais semanas na folha.</div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('print-modal')">Cancelar</button>
@@ -1088,15 +1087,21 @@ function doPrint() {
     if (!checked.length) { alert('Selecione pelo menos uma semana.'); return; }
 
     // Get column widths from sliders
-    const taskW = document.getElementById('col-task-width').value + 'px';
-    const workerW = document.getElementById('col-worker-width').value + 'px';
+    const taskW = document.getElementById('col-task-width').value;
+    const workerW = document.getElementById('col-worker-width').value;
 
-    // Apply column widths
+    // Apply column widths and font sizes - sliders control font size (7-13px range)
+    const taskFontSize = Math.round(7 + (parseInt(taskW) - 60) / (220 - 60) * 6);
+    const workerFontSize = Math.round(6 + (parseInt(workerW) - 40) / (160 - 40) * 5);
+
     const styleTag = document.createElement('style');
     styleTag.id = 'print-col-style';
     styleTag.textContent = `@media print {
-      .task-col { white-space: nowrap !important; font-size: ${Math.max(8, parseInt(taskW)-2)}px !important; padding: 4px 6px !important; }
-      .worker-col { white-space: nowrap !important; font-size: ${Math.max(7, parseInt(workerW)-3)}px !important; padding: 4px 4px !important; }
+      .gantt-table { font-size: ${taskFontSize}px !important; }
+      .task-col { font-size: ${taskFontSize}px !important; white-space: nowrap !important; overflow: visible !important; padding: 2px 6px !important; }
+      .worker-col { font-size: ${workerFontSize}px !important; white-space: nowrap !important; overflow: visible !important; padding: 2px 4px !important; }
+      .gantt-table thead th { font-size: ${taskFontSize}px !important; white-space: nowrap !important; }
+      .day-cell { width: 16px !important; min-width: 16px !important; max-width: 16px !important; }
     }`;
     document.head.appendChild(styleTag);
 
