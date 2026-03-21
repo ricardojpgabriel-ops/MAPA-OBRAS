@@ -172,8 +172,8 @@
   .gantt-table thead tr:last-child th.weekend { background: #555; color: #aaa; }
 
   .gantt-table tbody td { padding: 3px 4px; text-align: left; }
-  .gantt-table tbody td.task-col { font-weight: 500; font-size: 12px; padding: 4px 10px; min-width: 160px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
-  .gantt-table tbody td.worker-col { color: #555; font-size: 11px; min-width: 110px; }
+  .gantt-table tbody td.task-col { font-weight: 500; font-size: 12px; padding: 4px 8px; min-width: 120px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+  .gantt-table tbody td.worker-col { color: #555; font-size: 11px; min-width: 80px; max-width: 100px; overflow: hidden; text-overflow: ellipsis; }
   .gantt-table tbody tr:hover td { background: #fafafa; }
   .gantt-table tbody tr:nth-child(even) td { background: #fafff8; }
   .gantt-table tbody tr:nth-child(even):hover td { background: #f5f5f5; }
@@ -250,26 +250,28 @@
 
   @media print {
     @page { size: A4 landscape; margin: 8mm; }
-    body { background: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
-    header, .top-bar, .tabs, .export-bar, .btn, .legend, #panel-obras, #panel-trabalhadores { display: none !important; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+    body { background: white !important; }
+    header, .top-bar, .tabs, .export-bar, .btn, .legend, #panel-obras, #panel-trabalhadores, .mapa-header-bar { display: none !important; }
     .main { padding: 0 !important; }
     .mapa-wrapper { box-shadow: none !important; border-radius: 0 !important; }
-    .mapa-header-bar { display: none !important; }
-    #print-page-header { display: block !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    #print-page-header { display: block !important; }
     .gantt-scroll { overflow: visible !important; }
-    .gantt-table { font-size: 11px !important; width: 100% !important; border-collapse: collapse !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    .gantt-table th, .gantt-table td { border: 1px solid #ccc !important; }
-    .gantt-table thead tr:first-child th { background: #1a1a2e !important; color: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    .gantt-table thead tr:nth-child(2) th { background: #2d2d4e !important; color: #ccc !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    .gantt-table thead tr:last-child th { background: #3d3d5e !important; color: #ddd !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    .gantt-table thead tr:last-child th.weekend { background: #555 !important; color: #aaa !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    .day-cell { width: 22px !important; min-width: 22px !important; }
-    .day-cell.planned { background-color: #4caf50 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    .day-cell.not-done { background-color: #e53935 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    .day-cell.weekend { background-color: #d0d0d0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .gantt-table { font-size: 14px !important; width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important; }
+    .gantt-table th, .gantt-table td { border: 1px solid #bbb !important; padding: 3px 4px !important; }
+    .gantt-table thead tr:first-child th { background: #1a1a2e !important; color: white !important; font-size: 11px !important; }
+    .gantt-table thead tr:nth-child(2) th { background: #2d2d4e !important; color: #eee !important; font-size: 13px !important; }
+    .gantt-table thead tr:last-child th { background: #3d3d5e !important; color: #ddd !important; font-size: 11px !important; }
+    .gantt-table thead tr:last-child th.weekend { background: #555 !important; color: #bbb !important; }
+    .task-col { width: 130px !important; min-width: 130px !important; max-width: 130px !important; font-size: 12px !important; overflow: hidden !important; }
+    .worker-col { width: 80px !important; min-width: 80px !important; max-width: 80px !important; font-size: 11px !important; overflow: hidden !important; }
+    .day-cell { width: 24px !important; min-width: 24px !important; max-width: 24px !important; padding: 2px !important; }
+    .day-cell.planned { background-color: #4caf50 !important; }
+    .day-cell.not-done { background-color: #e53935 !important; }
+    .day-cell.weekend { background-color: #d0d0d0 !important; }
     .col-hidden-print { display: none !important; }
-    .task-col { width: 160px !important; min-width: 160px !important; max-width: 160px !important; font-size: 11px !important; }
-    .worker-col { width: 90px !important; min-width: 90px !important; max-width: 90px !important; font-size: 10px !important; }
+    .gantt-table tbody td { font-size: 12px !important; }
+    .gantt-table tbody td:last-child { display: none !important; }
   }
 
   .empty-state {
@@ -351,18 +353,15 @@
 
 <!-- MODAL: Imprimir -->
 <div class="modal-overlay" id="print-modal">
-  <div class="modal" style="max-width:420px;">
+  <div class="modal" style="max-width:440px;">
     <h3>🖨 Opções de Impressão</h3>
     <div class="form-group">
-      <label>O que pretende imprimir?</label>
-      <select id="print-scope" onchange="onPrintScopeChange()">
-        <option value="all">Mês completo</option>
-        <option value="week">Semanas à escolha</option>
-      </select>
-    </div>
-    <div class="form-group" id="print-week-group" style="display:none;">
-      <label>Selecione as semanas (pode escolher várias):</label>
-      <div id="print-weeks-checkboxes" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"></div>
+      <label style="font-size:13px;font-weight:600;margin-bottom:8px;display:block;">Selecione as semanas a imprimir:</label>
+      <div id="print-weeks-checkboxes" style="display:flex;flex-direction:column;gap:10px;margin-bottom:4px;"></div>
+      <div style="margin-top:10px;display:flex;gap:8px;">
+        <button class="btn btn-outline btn-sm" onclick="selectAllWeeks(true)">✓ Todas</button>
+        <button class="btn btn-outline btn-sm" onclick="selectAllWeeks(false)">✗ Nenhuma</button>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('print-modal')">Cancelar</button>
@@ -1014,6 +1013,10 @@ function exportCSV() {
 
 let printWeeksList = [];
 
+function selectAllWeeks(val) {
+  document.querySelectorAll('#print-weeks-checkboxes input[type=checkbox]').forEach(cb => cb.checked = val);
+}
+
 function openPrintModal() {
   const obraId = document.getElementById('obra-select').value;
   const monthVal = document.getElementById('month-picker').value;
@@ -1021,31 +1024,28 @@ function openPrintModal() {
   const [year, month] = monthVal.split('-').map(Number);
   const days = getDaysInMonth(year, month - 1);
   printWeeksList = [];
-  let week = 1, wStart = 1;
+  let wn = 1, ws = 1;
   for (let d = 1; d <= days; d++) {
     const dow = new Date(year, month - 1, d).getDay();
-    if (dow === 0 && d > 1) { printWeeksList.push({ num: week, start: wStart, end: d - 1 }); wStart = d; week++; }
-    if (d === days) printWeeksList.push({ num: week, start: wStart, end: d });
+    if (dow === 0 && d > 1) { printWeeksList.push({ num: wn, start: ws, end: d - 1 }); ws = d; wn++; }
+    if (d === days) printWeeksList.push({ num: wn, start: ws, end: d });
   }
-  const box = document.getElementById('print-weeks-checkboxes');
-  box.innerHTML = printWeeksList.map(w =>
-    `<label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;">
-      <input type="checkbox" value="${w.start}-${w.end}" checked style="width:16px;height:16px;cursor:pointer;">
-      Semana ${w.num} &nbsp;<span style="color:#888;font-size:12px;">(dias ${w.start} a ${w.end})</span>
+  document.getElementById('print-weeks-checkboxes').innerHTML = printWeeksList.map(w =>
+    `<label style="display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer;padding:6px 10px;border:1px solid #e0e0e0;border-radius:6px;">
+      <input type="checkbox" value="${w.start}|${w.end}" checked style="width:18px;height:18px;cursor:pointer;accent-color:#1a1a2e;">
+      <span><strong>Semana ${w.num}</strong> <span style="color:#888;font-size:12px;">— dias ${w.start} a ${w.end}</span></span>
     </label>`
   ).join('');
-  document.getElementById('print-scope').value = 'all';
-  document.getElementById('print-week-group').style.display = 'none';
   openModal('print-modal');
 }
 
 function doPrint() {
-  const scope = document.getElementById('print-scope').value;
   const monthVal = document.getElementById('month-picker').value;
   const obraId = document.getElementById('obra-select').value;
   const [year, month] = monthVal.split('-').map(Number);
   const obra = state.obras.find(o => o.id === obraId);
 
+  // Cleanup previous
   const oldH = document.getElementById('print-page-header');
   if (oldH) oldH.remove();
   document.querySelectorAll('.col-hidden-print').forEach(el => el.classList.remove('col-hidden-print'));
@@ -1053,45 +1053,52 @@ function doPrint() {
     th.setAttribute('colspan', th.dataset.origColspan); delete th.dataset.origColspan;
   });
 
-  let startDay = 1, endDay = getDaysInMonth(year, month - 1), weekLabel = 'Mês completo';
+  // Get selected weeks
+  const checked = [...document.querySelectorAll('#print-weeks-checkboxes input:checked')];
+  if (!checked.length) { alert('Selecione pelo menos uma semana.'); return; }
 
-  if (scope === 'week') {
-    const checked = [...document.querySelectorAll('#print-weeks-checkboxes input:checked')];
-    if (!checked.length) { alert('Selecione pelo menos uma semana.'); return; }
-    const ranges = checked.map(c => c.value.split('-').map(Number));
-    startDay = Math.min(...ranges.map(r => r[0]));
-    endDay = Math.max(...ranges.map(r => r[1]));
-    weekLabel = printWeeksList.filter(w => ranges.some(r => r[0] === w.start)).map(w => 'Semana ' + w.num).join(' + ');
-  }
+  const allWeeks = printWeeksList.length === checked.length;
+  const ranges = checked.map(c => c.value.split('|').map(Number));
+  const startDay = Math.min(...ranges.map(r => r[0]));
+  const endDay = Math.max(...ranges.map(r => r[1]));
+  const weekLabel = allWeeks ? 'Mês completo' :
+    printWeeksList.filter(w => ranges.some(r => r[0] === w.start)).map(w => 'Semana ' + w.num).join(' + ');
 
-  const printHeader = document.createElement('div');
-  printHeader.id = 'print-page-header';
-  printHeader.style.display = 'none';
-  printHeader.innerHTML = `<div style="background:#1a1a2e;color:white;padding:10px 16px;display:flex;align-items:center;gap:16px;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+  // Build header
+  const ph = document.createElement('div');
+  ph.id = 'print-page-header';
+  ph.style.display = 'none';
+  ph.innerHTML = `<div style="background:#1a1a2e;color:white;padding:10px 16px;display:flex;align-items:center;gap:16px;">
     <strong style="font-size:15px;">${obra ? obra.nome : ''}</strong>
     <span style="font-size:13px;color:#f9a825;">${MONTHS_PT[month-1].toUpperCase()} ${year}</span>
-    <span style="font-size:12px;color:#aaa;">— ${weekLabel}</span>
+    <span style="font-size:12px;color:#bbb;">— ${weekLabel}</span>
   </div>`;
-  document.querySelector('.mapa-wrapper').prepend(printHeader);
-  printHeader.style.display = 'block';
+  document.querySelector('.mapa-wrapper').prepend(ph);
+  ph.style.display = 'block';
 
-  if (scope === 'week') {
+  // Hide columns outside range
+  if (!allWeeks) {
     const table = document.querySelector('.gantt-table');
     if (table) {
-      let pos = 0;
-      table.querySelectorAll('thead tr:nth-child(2) th').forEach(th => { pos++; if (pos < startDay || pos > endDay) th.classList.add('col-hidden-print'); });
-      pos = 0;
-      table.querySelectorAll('thead tr:nth-child(3) th').forEach(th => { pos++; if (pos < startDay || pos > endDay) th.classList.add('col-hidden-print'); });
-      let colPos = 0;
+      // Day number row
+      let p = 0;
+      table.querySelectorAll('thead tr:nth-child(2) th').forEach(th => { p++; if (p < startDay || p > endDay) th.classList.add('col-hidden-print'); });
+      // Day name row
+      p = 0;
+      table.querySelectorAll('thead tr:nth-child(3) th').forEach(th => { p++; if (p < startDay || p > endDay) th.classList.add('col-hidden-print'); });
+      // Week header row
+      let cp = 0;
       table.querySelectorAll('thead tr:first-child th:not([rowspan])').forEach(th => {
         const span = parseInt(th.getAttribute('colspan') || 1);
-        const wS = colPos + 1, wE = colPos + span; colPos += span;
-        if (wE < startDay || wS > endDay) { th.classList.add('col-hidden-print'); }
-        else if (wS < startDay || wE > endDay) {
+        const ws = cp + 1, we = cp + span; cp += span;
+        if (we < startDay || ws > endDay) {
+          th.classList.add('col-hidden-print');
+        } else if (ws < startDay || we > endDay) {
           th.dataset.origColspan = span;
-          th.setAttribute('colspan', Math.min(wE, endDay) - Math.max(wS, startDay) + 1);
+          th.setAttribute('colspan', Math.min(we, endDay) - Math.max(ws, startDay) + 1);
         }
       });
+      // Body cells
       table.querySelectorAll('tbody tr').forEach(row => {
         let dp = 0;
         row.querySelectorAll('td.day-cell').forEach(td => { dp++; if (dp < startDay || dp > endDay) td.classList.add('col-hidden-print'); });
@@ -1105,7 +1112,7 @@ function doPrint() {
     setTimeout(() => {
       document.querySelectorAll('.col-hidden-print').forEach(el => el.classList.remove('col-hidden-print'));
       document.querySelectorAll('[data-orig-colspan]').forEach(th => { th.setAttribute('colspan', th.dataset.origColspan); delete th.dataset.origColspan; });
-      printHeader.remove();
+      ph.remove();
     }, 2000);
   }, 200);
 }
