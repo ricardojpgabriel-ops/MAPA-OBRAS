@@ -160,7 +160,7 @@
   .mapa-header-bar h2 { font-size: 15px; font-weight: 600; }
 
   .gantt-scroll { overflow-x: auto; }
-  .gantt-table { border-collapse: collapse; min-width: 100%; font-size: 12px; }
+  .gantt-table { border-collapse: collapse; min-width: 100%; font-size: 12px; table-layout: auto; }
   .gantt-table th, .gantt-table td { border: 1px solid #e0e0e0; white-space: nowrap; }
 
   .gantt-table thead tr:first-child th { background: #1a1a2e; color: white; text-align: center; font-weight: 600; padding: 6px 4px; }
@@ -172,8 +172,8 @@
   .gantt-table thead tr:last-child th.weekend { background: #555; color: #aaa; }
 
   .gantt-table tbody td { padding: 3px 4px; text-align: left; }
-  .gantt-table tbody td.task-col { font-weight: 500; font-size: 12px; padding: 4px 8px; min-width: 140px; white-space: normal; word-break: break-word; }
-  .gantt-table tbody td.worker-col { color: #555; font-size: 11px; min-width: 90px; white-space: normal; word-break: break-word; }
+  .gantt-table tbody td.task-col { font-weight: 500; font-size: 12px; padding: 4px 10px; white-space: nowrap; }
+  .gantt-table tbody td.worker-col { color: #555; font-size: 11px; padding: 4px 8px; white-space: nowrap; }
   .gantt-table tbody tr:hover td { background: #fafafa; }
   .gantt-table tbody tr:nth-child(even) td { background: #fafff8; }
   .gantt-table tbody tr:nth-child(even):hover td { background: #f5f5f5; }
@@ -257,15 +257,15 @@
     .mapa-wrapper { box-shadow: none !important; border-radius: 0 !important; }
     #print-page-header { display: block !important; }
     .gantt-scroll { overflow: visible !important; }
-    .gantt-table { font-size: 14px !important; width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important; }
+    .gantt-table { font-size: 11px !important; border-collapse: collapse !important; table-layout: auto !important; }
     .gantt-table th, .gantt-table td { border: 1px solid #bbb !important; padding: 3px 4px !important; }
     .gantt-table thead tr:first-child th { background: #1a1a2e !important; color: white !important; font-size: 11px !important; }
     .gantt-table thead tr:nth-child(2) th { background: #2d2d4e !important; color: #eee !important; font-size: 13px !important; }
     .gantt-table thead tr:last-child th { background: #3d3d5e !important; color: #ddd !important; font-size: 11px !important; }
     .gantt-table thead tr:last-child th.weekend { background: #555 !important; color: #bbb !important; }
-    .task-col { width: 130px !important; min-width: 130px !important; max-width: 130px !important; font-size: 12px !important; white-space: normal !important; word-break: break-word !important; overflow: visible !important; }
-    .worker-col { width: 80px !important; min-width: 80px !important; max-width: 80px !important; font-size: 11px !important; white-space: normal !important; word-break: break-word !important; overflow: visible !important; }
-    .day-cell { width: 24px !important; min-width: 24px !important; max-width: 24px !important; padding: 2px !important; }
+    .task-col { white-space: nowrap !important; padding: 4px 8px !important; font-size: 11px !important; }
+    .worker-col { white-space: nowrap !important; padding: 4px 6px !important; font-size: 10px !important; }
+    .day-cell { width: 22px !important; min-width: 22px !important; max-width: 22px !important; padding: 2px !important; }
     .day-cell.planned { background-color: #4caf50 !important; }
     .day-cell.not-done { background-color: #e53935 !important; }
     .day-cell.weekend { background-color: #d0d0d0 !important; }
@@ -364,7 +364,7 @@
       </div>
     </div>
     <div class="form-group" style="border-top:1px solid #eee;padding-top:14px;margin-top:4px;">
-      <label style="font-size:13px;font-weight:600;margin-bottom:12px;display:block;">Largura das colunas na impressão:</label>
+      <label style="font-size:13px;font-weight:600;margin-bottom:12px;display:block;">Tamanho do texto na impressão:</label>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
         <span style="font-size:12px;color:#555;min-width:70px;">Tarefas</span>
         <input type="range" id="col-task-width" min="60" max="220" value="130" step="5" oninput="document.getElementById('col-task-val').textContent=this.value+'px'" style="flex:1;">
@@ -375,6 +375,7 @@
         <input type="range" id="col-worker-width" min="40" max="160" value="80" step="5" oninput="document.getElementById('col-worker-val').textContent=this.value+'px'" style="flex:1;">
         <span id="col-worker-val" style="font-size:12px;color:#333;min-width:40px;text-align:right;">80px</span>
       </div>
+      <div style="font-size:11px;color:#999;margin-top:8px;">💡 Mova para a direita = texto maior. Para mês completo use valores menores.</div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('print-modal')">Cancelar</button>
@@ -1094,8 +1095,8 @@ function doPrint() {
     const styleTag = document.createElement('style');
     styleTag.id = 'print-col-style';
     styleTag.textContent = `@media print {
-      .task-col { width: ${taskW} !important; min-width: ${taskW} !important; max-width: ${taskW} !important; white-space: normal !important; word-break: break-word !important; }
-      .worker-col { width: ${workerW} !important; min-width: ${workerW} !important; max-width: ${workerW} !important; white-space: normal !important; word-break: break-word !important; }
+      .task-col { white-space: nowrap !important; font-size: ${Math.max(8, parseInt(taskW)-2)}px !important; padding: 4px 6px !important; }
+      .worker-col { white-space: nowrap !important; font-size: ${Math.max(7, parseInt(workerW)-3)}px !important; padding: 4px 4px !important; }
     }`;
     document.head.appendChild(styleTag);
 
