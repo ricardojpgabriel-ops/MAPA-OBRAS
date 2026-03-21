@@ -254,8 +254,9 @@
     header, .top-bar, .tabs, .export-bar, .btn, .legend, #panel-obras, #panel-trabalhadores { display: none !important; }
     .main { padding: 0 !important; }
     .mapa-wrapper { box-shadow: none !important; border-radius: 0 !important; }
-    .mapa-header-bar { background: #1a1a2e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .gantt-table { font-size: 9px !important; }
+    .mapa-header-bar { display: none !important; }
+    #print-page-header { display: block !important; }
+    .gantt-table { font-size: 9px !important; width: 100% !important; }
     .gantt-table thead tr:first-child th { background: #1a1a2e !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .gantt-table thead tr:nth-child(2) th { background: #2d2d4e !important; color: #ccc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .gantt-table thead tr:last-child th { background: #3d3d5e !important; color: #ddd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -264,7 +265,8 @@
     .day-cell.not-done { background: #e53935 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .day-cell.weekend { background: #e0e0e0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .col-hidden-print { display: none !important; }
-    .print-legend { display: flex !important; }
+    .task-col { min-width: 120px !important; max-width: 150px !important; }
+    .worker-col { min-width: 80px !important; }
   }
 
   .empty-state {
@@ -1035,44 +1037,109 @@ function openPrintModal() {
 
 function doPrint() {
   const scope = document.getElementById('print-scope').value;
+  const monthVal = document.getElementById('month-picker').value;
+  const obraId = document.getElementById('obra-select').value;
+  const [year, month] = monthVal.split('-').map(Number);
+  const obra = state.obras.find(o => o.id === obraId);
+
+  // Remove any previous print header
+  const oldHeader = document.getElementById('print-page-header');
+  if (oldHeader) oldHeader.remove();
+
+  // Create print header with obra name, month and year
+  const printHeader = document.createElement('div');
+  printHeader.id = 'print-page-header';
+  printHeader.style.cssText = 'display:none;';
+  printHeader.innerHTML = `
+    <div style="background:#1a1a2e;color:white;padding:10px 16px;margin-bottom:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+      <strong style="font-size:14px;">${obra ? obra.nome : ''}</strong>
+      <span style="margin-left:12px;font-size:13px;color:#ccc;">${MONTHS_PT[month-1].toUpperCase()} ${year}</span>
+      ${scope === 'week' ? `<span style="margin-left:12px;font-size:12px;color:#aaa;">— ${document.getElementById('print-week-select').options[document.getElementById('print-week-select').selectedIndex].text}</span>` : ''}
+    </div>`;
+  document.querySelector('.mapa-wrapper').prepend(printHeader);
+
   if (scope === 'all') {
     document.querySelectorAll('.col-hidden-print').forEach(el => el.classList.remove('col-hidden-print'));
+    printHeader.style.display = 'block';
     closeModal('print-modal');
-    setTimeout(() => window.print(), 100);
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => { printHeader.remove(); }, 1000);
+    }, 100);
     return;
   }
 
   const [startDay, endDay] = document.getElementById('print-week-select').value.split('-').map(Number);
-  const monthVal = document.getElementById('month-picker').value;
-  const [year, month] = monthVal.split('-').map(Number);
-  const days = getDaysInMonth(year, month - 1);
 
-  // Hide columns outside selected week
+  // Hide week header columns outside selected week
   const table = document.querySelector('.gantt-table');
   if (!table) { closeModal('print-modal'); window.print(); return; }
 
-  // Mark day columns to hide
-  const allRows = table.querySelectorAll('tr');
-  allRows.forEach(row => {
-    const cells = row.querySelectorAll('th, td');
-    let dayIdx = 0;
-    cells.forEach(cell => {
-      if (cell.classList.contains('day-cell') || (cell.tagName === 'TH' && cell.getAttribute('class') !== null && !cell.hasAttribute('rowspan'))) {
-        dayIdx++;
-        if (dayIdx < startDay || dayIdx > endDay) {
-          cell.classList.add('col-hidden-print');
-        }
-      }
+  // Process header rows - hide week spans, day numbers, day names
+  const headerRows = table.querySelectorAll('thead tr');
+
+  // Row 1: week colspan headers - hide weeks that don't overlap
+  headerRows[0].querySelectorAll('th:not([rowspan])').forEach(th => {
+    const span = parseInt(th.getAttribute('colspan') || 1);
+    // Get start day of this week from the text
+    const weekText = th.textContent.trim();
+    // We'll handle by tracking position
+  });
+
+  // Better approach: track column position across all rows
+  // Get all day-numbered headers (row index 1 = day numbers)
+  let dayPos = 0;
+  headerRows[1].querySelectorAll('th').forEach(th => {
+    dayPos++;
+    if (dayPos < startDay || dayPos > endDay) th.classList.add('col-hidden-print');
+  });
+  dayPos = 0;
+  headerRows[2].querySelectorAll('th').forEach(th => {
+    dayPos++;
+    if (dayPos < startDay || dayPos > endDay) th.classList.add('col-hidden-print');
+  });
+
+  // Hide week header cells that are entirely outside the selected range
+  let colPos = 0;
+  headerRows[0].querySelectorAll('th:not([rowspan])').forEach(th => {
+    const span = parseInt(th.getAttribute('colspan') || 1);
+    const weekStart = colPos + 1;
+    const weekEnd = colPos + span;
+    colPos += span;
+    if (weekEnd < startDay || weekStart > endDay) {
+      th.classList.add('col-hidden-print');
+    } else if (weekStart < startDay || weekEnd > endDay) {
+      // Partially visible - shrink colspan
+      const visStart = Math.max(weekStart, startDay);
+      const visEnd = Math.min(weekEnd, endDay);
+      th.setAttribute('colspan', visEnd - visStart + 1);
+      th.dataset.origColspan = span;
+    }
+  });
+
+  // Hide body day cells outside range
+  table.querySelectorAll('tbody tr').forEach(row => {
+    dayPos = 0;
+    row.querySelectorAll('td.day-cell').forEach(td => {
+      dayPos++;
+      if (dayPos < startDay || dayPos > endDay) td.classList.add('col-hidden-print');
     });
   });
 
+  printHeader.style.display = 'block';
   closeModal('print-modal');
   setTimeout(() => {
     window.print();
     setTimeout(() => {
       document.querySelectorAll('.col-hidden-print').forEach(el => el.classList.remove('col-hidden-print'));
-    }, 1000);
-  }, 100);
+      // Restore colspan
+      table.querySelectorAll('thead tr:first-child th[data-orig-colspan]').forEach(th => {
+        th.setAttribute('colspan', th.dataset.origColspan);
+        delete th.dataset.origColspan;
+      });
+      printHeader.remove();
+    }, 1500);
+  }, 150);
 }
 
 init();
