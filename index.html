@@ -356,11 +356,24 @@
   <div class="modal" style="max-width:440px;">
     <h3>🖨 Opções de Impressão</h3>
     <div class="form-group">
-      <label style="font-size:13px;font-weight:600;margin-bottom:8px;display:block;">Selecione as semanas a imprimir:</label>
-      <div id="print-weeks-checkboxes" style="display:flex;flex-direction:column;gap:10px;margin-bottom:4px;"></div>
+      <label style="font-size:13px;font-weight:600;margin-bottom:8px;display:block;">Semanas a imprimir:</label>
+      <div id="print-weeks-checkboxes" style="display:flex;flex-direction:column;gap:8px;margin-bottom:4px;"></div>
       <div style="margin-top:10px;display:flex;gap:8px;">
         <button class="btn btn-outline btn-sm" onclick="selectAllWeeks(true)">✓ Todas</button>
         <button class="btn btn-outline btn-sm" onclick="selectAllWeeks(false)">✗ Nenhuma</button>
+      </div>
+    </div>
+    <div class="form-group" style="border-top:1px solid #eee;padding-top:14px;margin-top:4px;">
+      <label style="font-size:13px;font-weight:600;margin-bottom:12px;display:block;">Largura das colunas na impressão:</label>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="font-size:12px;color:#555;min-width:70px;">Tarefas</span>
+        <input type="range" id="col-task-width" min="60" max="220" value="130" step="5" oninput="document.getElementById('col-task-val').textContent=this.value+'px'" style="flex:1;">
+        <span id="col-task-val" style="font-size:12px;color:#333;min-width:40px;text-align:right;">130px</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:12px;color:#555;min-width:70px;">Empresa</span>
+        <input type="range" id="col-worker-width" min="40" max="160" value="80" step="5" oninput="document.getElementById('col-worker-val').textContent=this.value+'px'" style="flex:1;">
+        <span id="col-worker-val" style="font-size:12px;color:#333;min-width:40px;text-align:right;">80px</span>
       </div>
     </div>
     <div class="modal-actions">
@@ -806,7 +819,17 @@ function renderMapa() {
     </div>
     <div class="export-bar">
       <div style="font-size:13px;color:#555;flex:1">
-        <b>${tasks.length}</b> tarefa(s) · Clique numa célula para alternar: vazio → <b style="color:var(--green)">verde</b> (a realizar) → <b style="color:var(--red)">vermelho</b> (não realizado) → vazio
+        <b>${tasks.length}</b> tarefa(s) · Clique numa célula: vazio → <b style="color:var(--green)">verde</b> → <b style="color:var(--red)">vermelho</b> → vazio
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#666;">
+        <span>📐 Tarefas</span>
+        <input type="range" min="80" max="300" value="${window._colTask||160}" step="10" style="width:80px;"
+          oninput="setColWidth('task',this.value)" title="Largura coluna tarefas">
+        <span id="col-task-val">${window._colTask||160}px</span>
+        <span style="margin-left:8px;">Empresa</span>
+        <input type="range" min="60" max="200" value="${window._colWorker||100}" step="10" style="width:70px;"
+          oninput="setColWidth('worker',this.value)" title="Largura coluna empresa">
+        <span id="col-worker-val">${window._colWorker||100}px</span>
       </div>
     </div>
     <div class="gantt-scroll">
@@ -1053,8 +1076,18 @@ function doPrint() {
     th.setAttribute('colspan', th.dataset.origColspan); delete th.dataset.origColspan;
   });
 
-  // Get selected weeks
-  const checked = [...document.querySelectorAll('#print-weeks-checkboxes input:checked')];
+  // Get column widths from sliders
+  const taskW = document.getElementById('col-task-width').value + 'px';
+  const workerW = document.getElementById('col-worker-width').value + 'px';
+
+  // Apply widths via a temporary style tag
+  const styleTag = document.createElement('style');
+  styleTag.id = 'print-col-style';
+  styleTag.textContent = `@media print {
+    .task-col { width: ${taskW} !important; min-width: ${taskW} !important; max-width: ${taskW} !important; }
+    .worker-col { width: ${workerW} !important; min-width: ${workerW} !important; max-width: ${workerW} !important; }
+  }`;
+  document.head.appendChild(styleTag);
   if (!checked.length) { alert('Selecione pelo menos uma semana.'); return; }
 
   const allWeeks = printWeeksList.length === checked.length;
@@ -1113,6 +1146,8 @@ function doPrint() {
       document.querySelectorAll('.col-hidden-print').forEach(el => el.classList.remove('col-hidden-print'));
       document.querySelectorAll('[data-orig-colspan]').forEach(th => { th.setAttribute('colspan', th.dataset.origColspan); delete th.dataset.origColspan; });
       ph.remove();
+      const s = document.getElementById('print-col-style');
+      if (s) s.remove();
     }, 2000);
   }, 200);
 }
