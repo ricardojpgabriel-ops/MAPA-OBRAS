@@ -172,8 +172,8 @@
   .gantt-table thead tr:last-child th.weekend { background: #555; color: #aaa; }
 
   .gantt-table tbody td { padding: 3px 4px; text-align: left; }
-  .gantt-table tbody td.task-col { font-weight: 500; font-size: 12px; padding: 4px 8px; min-width: 120px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
-  .gantt-table tbody td.worker-col { color: #555; font-size: 11px; min-width: 80px; max-width: 100px; overflow: hidden; text-overflow: ellipsis; }
+  .gantt-table tbody td.task-col { font-weight: 500; font-size: 12px; padding: 4px 8px; min-width: 140px; white-space: normal; word-break: break-word; }
+  .gantt-table tbody td.worker-col { color: #555; font-size: 11px; min-width: 90px; white-space: normal; word-break: break-word; }
   .gantt-table tbody tr:hover td { background: #fafafa; }
   .gantt-table tbody tr:nth-child(even) td { background: #fafff8; }
   .gantt-table tbody tr:nth-child(even):hover td { background: #f5f5f5; }
@@ -263,8 +263,8 @@
     .gantt-table thead tr:nth-child(2) th { background: #2d2d4e !important; color: #eee !important; font-size: 13px !important; }
     .gantt-table thead tr:last-child th { background: #3d3d5e !important; color: #ddd !important; font-size: 11px !important; }
     .gantt-table thead tr:last-child th.weekend { background: #555 !important; color: #bbb !important; }
-    .task-col { width: 130px !important; min-width: 130px !important; max-width: 130px !important; font-size: 12px !important; overflow: hidden !important; }
-    .worker-col { width: 80px !important; min-width: 80px !important; max-width: 80px !important; font-size: 11px !important; overflow: hidden !important; }
+    .task-col { width: 130px !important; min-width: 130px !important; max-width: 130px !important; font-size: 12px !important; white-space: normal !important; word-break: break-word !important; overflow: visible !important; }
+    .worker-col { width: 80px !important; min-width: 80px !important; max-width: 80px !important; font-size: 11px !important; white-space: normal !important; word-break: break-word !important; overflow: visible !important; }
     .day-cell { width: 24px !important; min-width: 24px !important; max-width: 24px !important; padding: 2px !important; }
     .day-cell.planned { background-color: #4caf50 !important; }
     .day-cell.not-done { background-color: #e53935 !important; }
@@ -1084,8 +1084,8 @@ function doPrint() {
   const styleTag = document.createElement('style');
   styleTag.id = 'print-col-style';
   styleTag.textContent = `@media print {
-    .task-col { width: ${taskW} !important; min-width: ${taskW} !important; max-width: ${taskW} !important; }
-    .worker-col { width: ${workerW} !important; min-width: ${workerW} !important; max-width: ${workerW} !important; }
+    .task-col { width: ${taskW} !important; min-width: ${taskW} !important; max-width: ${taskW} !important; white-space: normal !important; word-break: break-word !important; overflow: visible !important; }
+    .worker-col { width: ${workerW} !important; min-width: ${workerW} !important; max-width: ${workerW} !important; white-space: normal !important; word-break: break-word !important; overflow: visible !important; }
   }`;
   document.head.appendChild(styleTag);
   if (!checked.length) { alert('Selecione pelo menos uma semana.'); return; }
