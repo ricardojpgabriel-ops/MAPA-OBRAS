@@ -1088,6 +1088,9 @@ function doPrint() {
     .worker-col { width: ${workerW} !important; min-width: ${workerW} !important; max-width: ${workerW} !important; white-space: normal !important; word-break: break-word !important; overflow: visible !important; }
   }`;
   document.head.appendChild(styleTag);
+
+  // Get selected weeks
+  const checked = [...document.querySelectorAll('#print-weeks-checkboxes input:checked')];
   if (!checked.length) { alert('Selecione pelo menos uma semana.'); return; }
 
   const allWeeks = printWeeksList.length === checked.length;
