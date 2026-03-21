@@ -1063,96 +1063,103 @@ function openPrintModal() {
 }
 
 function doPrint() {
-  const monthVal = document.getElementById('month-picker').value;
-  const obraId = document.getElementById('obra-select').value;
-  const [year, month] = monthVal.split('-').map(Number);
-  const obra = state.obras.find(o => o.id === obraId);
+  try {
+    const monthVal = document.getElementById('month-picker').value;
+    const obraId = document.getElementById('obra-select').value;
+    if (!obraId || !monthVal) { alert('Selecione uma obra e mês primeiro.'); return; }
 
-  // Cleanup previous
-  const oldH = document.getElementById('print-page-header');
-  if (oldH) oldH.remove();
-  document.querySelectorAll('.col-hidden-print').forEach(el => el.classList.remove('col-hidden-print'));
-  document.querySelectorAll('[data-orig-colspan]').forEach(th => {
-    th.setAttribute('colspan', th.dataset.origColspan); delete th.dataset.origColspan;
-  });
+    const [year, month] = monthVal.split('-').map(Number);
+    const obra = state.obras.find(o => o.id === obraId);
 
-  // Get column widths from sliders
-  const taskW = document.getElementById('col-task-width').value + 'px';
-  const workerW = document.getElementById('col-worker-width').value + 'px';
+    // Cleanup previous state
+    const oldH = document.getElementById('print-page-header');
+    if (oldH) oldH.remove();
+    const oldS = document.getElementById('print-col-style');
+    if (oldS) oldS.remove();
+    document.querySelectorAll('.col-hidden-print').forEach(el => el.classList.remove('col-hidden-print'));
+    document.querySelectorAll('[data-orig-colspan]').forEach(th => {
+      th.setAttribute('colspan', th.dataset.origColspan);
+      delete th.dataset.origColspan;
+    });
 
-  // Apply widths via a temporary style tag
-  const styleTag = document.createElement('style');
-  styleTag.id = 'print-col-style';
-  styleTag.textContent = `@media print {
-    .task-col { width: ${taskW} !important; min-width: ${taskW} !important; max-width: ${taskW} !important; white-space: normal !important; word-break: break-word !important; overflow: visible !important; }
-    .worker-col { width: ${workerW} !important; min-width: ${workerW} !important; max-width: ${workerW} !important; white-space: normal !important; word-break: break-word !important; overflow: visible !important; }
-  }`;
-  document.head.appendChild(styleTag);
+    // Get selected weeks
+    const checked = [...document.querySelectorAll('#print-weeks-checkboxes input:checked')];
+    if (!checked.length) { alert('Selecione pelo menos uma semana.'); return; }
 
-  // Get selected weeks
-  const checked = [...document.querySelectorAll('#print-weeks-checkboxes input:checked')];
-  if (!checked.length) { alert('Selecione pelo menos uma semana.'); return; }
+    // Get column widths from sliders
+    const taskW = document.getElementById('col-task-width').value + 'px';
+    const workerW = document.getElementById('col-worker-width').value + 'px';
 
-  const allWeeks = printWeeksList.length === checked.length;
-  const ranges = checked.map(c => c.value.split('|').map(Number));
-  const startDay = Math.min(...ranges.map(r => r[0]));
-  const endDay = Math.max(...ranges.map(r => r[1]));
-  const weekLabel = allWeeks ? 'Mês completo' :
-    printWeeksList.filter(w => ranges.some(r => r[0] === w.start)).map(w => 'Semana ' + w.num).join(' + ');
+    // Apply column widths
+    const styleTag = document.createElement('style');
+    styleTag.id = 'print-col-style';
+    styleTag.textContent = `@media print {
+      .task-col { width: ${taskW} !important; min-width: ${taskW} !important; max-width: ${taskW} !important; white-space: normal !important; word-break: break-word !important; }
+      .worker-col { width: ${workerW} !important; min-width: ${workerW} !important; max-width: ${workerW} !important; white-space: normal !important; word-break: break-word !important; }
+    }`;
+    document.head.appendChild(styleTag);
 
-  // Build header
-  const ph = document.createElement('div');
-  ph.id = 'print-page-header';
-  ph.style.display = 'none';
-  ph.innerHTML = `<div style="background:#1a1a2e;color:white;padding:10px 16px;display:flex;align-items:center;gap:16px;">
-    <strong style="font-size:15px;">${obra ? obra.nome : ''}</strong>
-    <span style="font-size:13px;color:#f9a825;">${MONTHS_PT[month-1].toUpperCase()} ${year}</span>
-    <span style="font-size:12px;color:#bbb;">— ${weekLabel}</span>
-  </div>`;
-  document.querySelector('.mapa-wrapper').prepend(ph);
-  ph.style.display = 'block';
+    // Calculate range
+    const allWeeks = printWeeksList.length === checked.length;
+    const ranges = checked.map(c => c.value.split('|').map(Number));
+    const startDay = Math.min(...ranges.map(r => r[0]));
+    const endDay = Math.max(...ranges.map(r => r[1]));
+    const weekLabel = allWeeks ? 'Mês completo' :
+      printWeeksList.filter(w => ranges.some(r => r[0] === w.start)).map(w => 'Semana ' + w.num).join(' + ');
 
-  // Hide columns outside range
-  if (!allWeeks) {
-    const table = document.querySelector('.gantt-table');
-    if (table) {
-      // Day number row
-      let p = 0;
-      table.querySelectorAll('thead tr:nth-child(2) th').forEach(th => { p++; if (p < startDay || p > endDay) th.classList.add('col-hidden-print'); });
-      // Day name row
-      p = 0;
-      table.querySelectorAll('thead tr:nth-child(3) th').forEach(th => { p++; if (p < startDay || p > endDay) th.classList.add('col-hidden-print'); });
-      // Week header row
-      let cp = 0;
-      table.querySelectorAll('thead tr:first-child th:not([rowspan])').forEach(th => {
-        const span = parseInt(th.getAttribute('colspan') || 1);
-        const ws = cp + 1, we = cp + span; cp += span;
-        if (we < startDay || ws > endDay) {
-          th.classList.add('col-hidden-print');
-        } else if (ws < startDay || we > endDay) {
-          th.dataset.origColspan = span;
-          th.setAttribute('colspan', Math.min(we, endDay) - Math.max(ws, startDay) + 1);
-        }
-      });
-      // Body cells
-      table.querySelectorAll('tbody tr').forEach(row => {
-        let dp = 0;
-        row.querySelectorAll('td.day-cell').forEach(td => { dp++; if (dp < startDay || dp > endDay) td.classList.add('col-hidden-print'); });
-      });
+    // Build and insert print header
+    const ph = document.createElement('div');
+    ph.id = 'print-page-header';
+    ph.innerHTML = `<div style="background:#1a1a2e;color:white;padding:10px 16px;display:flex;align-items:center;gap:16px;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+      <strong style="font-size:15px;">${obra ? obra.nome : ''}</strong>
+      <span style="font-size:13px;color:#f9a825;">${MONTHS_PT[month-1].toUpperCase()} ${year}</span>
+      <span style="font-size:12px;color:#bbb;">— ${weekLabel}</span>
+    </div>`;
+
+    const wrapper = document.querySelector('.mapa-wrapper');
+    if (wrapper) wrapper.prepend(ph);
+    else document.querySelector('.main').prepend(ph);
+
+    // Hide columns outside selected range
+    if (!allWeeks) {
+      const table = document.querySelector('.gantt-table');
+      if (table) {
+        let p = 0;
+        table.querySelectorAll('thead tr:nth-child(2) th').forEach(th => { p++; if (p < startDay || p > endDay) th.classList.add('col-hidden-print'); });
+        p = 0;
+        table.querySelectorAll('thead tr:nth-child(3) th').forEach(th => { p++; if (p < startDay || p > endDay) th.classList.add('col-hidden-print'); });
+        let cp = 0;
+        table.querySelectorAll('thead tr:first-child th:not([rowspan])').forEach(th => {
+          const span = parseInt(th.getAttribute('colspan') || 1);
+          const ws = cp + 1, we = cp + span; cp += span;
+          if (we < startDay || ws > endDay) { th.classList.add('col-hidden-print'); }
+          else if (ws < startDay || we > endDay) {
+            th.dataset.origColspan = span;
+            th.setAttribute('colspan', Math.min(we, endDay) - Math.max(ws, startDay) + 1);
+          }
+        });
+        table.querySelectorAll('tbody tr').forEach(row => {
+          let dp = 0;
+          row.querySelectorAll('td.day-cell').forEach(td => { dp++; if (dp < startDay || dp > endDay) td.classList.add('col-hidden-print'); });
+        });
+      }
     }
-  }
 
-  closeModal('print-modal');
-  setTimeout(() => {
-    window.print();
+    closeModal('print-modal');
+
     setTimeout(() => {
-      document.querySelectorAll('.col-hidden-print').forEach(el => el.classList.remove('col-hidden-print'));
-      document.querySelectorAll('[data-orig-colspan]').forEach(th => { th.setAttribute('colspan', th.dataset.origColspan); delete th.dataset.origColspan; });
-      ph.remove();
-      const s = document.getElementById('print-col-style');
-      if (s) s.remove();
-    }, 2000);
-  }, 200);
+      window.print();
+      setTimeout(() => {
+        document.querySelectorAll('.col-hidden-print').forEach(el => el.classList.remove('col-hidden-print'));
+        document.querySelectorAll('[data-orig-colspan]').forEach(th => { th.setAttribute('colspan', th.dataset.origColspan); delete th.dataset.origColspan; });
+        const h = document.getElementById('print-page-header'); if (h) h.remove();
+        const s = document.getElementById('print-col-style'); if (s) s.remove();
+      }, 2000);
+    }, 200);
+
+  } catch(e) {
+    alert('Erro ao imprimir: ' + e.message);
+  }
 }
 
 init();
