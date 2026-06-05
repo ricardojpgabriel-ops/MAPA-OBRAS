@@ -1,0 +1,14 @@
+# Plataformas e artefactos gerados por `flutter create` / build (não versionar)
+/android/
+/ios/
+/linux/
+/macos/
+/windows/
+/web/
+/build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.metadata
+pubspec.lock

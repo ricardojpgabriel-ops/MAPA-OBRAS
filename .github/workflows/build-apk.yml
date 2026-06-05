@@ -1,0 +1,53 @@
+name: Compilar APK (Android)
+
+# Gera um APK de teste a partir do código Flutter em /app.
+# Corre quando há alterações na app ou manualmente (Actions → Run workflow).
+on:
+  push:
+    branches: ['**']
+    paths:
+      - 'app/**'
+      - '.github/workflows/build-apk.yml'
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Gerar plataforma Android (não toca no lib/ existente)
+        working-directory: app
+        run: flutter create --platforms=android --org com.scannertaloes --project-name scanner_taloes .
+
+      - name: Adicionar permissão de câmara ao Manifest
+        working-directory: app
+        run: |
+          MAN=android/app/src/main/AndroidManifest.xml
+          grep -q 'android.permission.CAMERA' "$MAN" || \
+            sed -i 's#<application#<uses-permission android:name="android.permission.CAMERA"/>\n    <application#' "$MAN"
+          cat "$MAN"
+
+      - name: Dependências
+        working-directory: app
+        run: flutter pub get
+
+      - name: Build APK (release, assinado com chave de debug para testes)
+        working-directory: app
+        run: flutter build apk --release
+
+      - name: Publicar APK como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: scanner-taloes-apk
+          path: app/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
