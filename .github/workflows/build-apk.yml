@@ -10,6 +10,9 @@ on:
       - '.github/workflows/build-apk.yml'
   workflow_dispatch: {}
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -46,9 +49,26 @@ jobs:
         working-directory: app
         run: flutter build apk --debug
 
+      - name: Preparar APK com nome final
+        run: cp app/build/app/outputs/flutter-apk/app-debug.apk EuroScanner.apk
+
       - name: Publicar APK como artefacto
         uses: actions/upload-artifact@v4
         with:
           name: euroscanner-apk
-          path: app/build/app/outputs/flutter-apk/app-debug.apk
+          path: EuroScanner.apk
           if-no-files-found: error
+
+      - name: Publicar Release com link direto do APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-latest
+          name: EuroScanner — APK de teste
+          body: |
+            APK de teste do EuroScanner (debug, instalável em Android).
+            Descarrega o ficheiro **EuroScanner.apk** em baixo e instala no telemóvel
+            (ativa "instalar de fontes desconhecidas" quando pedido).
+            Compilado a partir do commit ${{ github.sha }}.
+          prerelease: true
+          files: EuroScanner.apk
+          fail_on_unmatched_files: true
