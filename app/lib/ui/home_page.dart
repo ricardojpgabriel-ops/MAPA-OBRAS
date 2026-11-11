@@ -157,7 +157,7 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         backgroundColor: santaGreen,
         foregroundColor: Colors.white,
-        title: const Text('EuroScanner', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: const Text('EuroScanner · b$_build', style: TextStyle(fontWeight: FontWeight.w800)),
         actions: [
           IconButton(onPressed: loading ? null : () => _load(force: true), icon: const Icon(Icons.refresh), tooltip: 'Atualizar resultados'),
         ],
