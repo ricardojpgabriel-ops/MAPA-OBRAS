@@ -29,12 +29,13 @@ jobs:
         working-directory: app
         run: flutter create --platforms=android --org com.scannertaloes --project-name scanner_taloes .
 
-      - name: Adicionar permissão de câmara ao Manifest
+      - name: Nome e permissão de câmara no Manifest
         working-directory: app
         run: |
           MAN=android/app/src/main/AndroidManifest.xml
           grep -q 'android.permission.CAMERA' "$MAN" || \
             sed -i 's#<application#<uses-permission android:name="android.permission.CAMERA"/>\n    <application#' "$MAN"
+          sed -i 's#android:label="[^"]*"#android:label="EuroScanner"#' "$MAN"
           cat "$MAN"
 
       - name: Dependências
@@ -48,6 +49,6 @@ jobs:
       - name: Publicar APK como artefacto
         uses: actions/upload-artifact@v4
         with:
-          name: scanner-taloes-apk
+          name: euroscanner-apk
           path: app/build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error

@@ -21,7 +21,7 @@ class ScannerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Scanner de Talões',
+      title: 'EuroScanner',
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),
       home: HomePage(results: ResultsService()),
