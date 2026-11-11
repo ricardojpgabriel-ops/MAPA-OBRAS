@@ -47,7 +47,7 @@ jobs:
 
       - name: Build APK (debug — instalável para testes, evita o R8 do ML Kit)
         working-directory: app
-        run: flutter build apk --debug
+        run: flutter build apk --debug --build-number=${{ github.run_number }} --dart-define=BUILD=${{ github.run_number }}
 
       - name: Preparar APK com nome final
         run: cp app/build/app/outputs/flutter-apk/app-debug.apk EuroScanner.apk

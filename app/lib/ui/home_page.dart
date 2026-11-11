@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../data/game_config.dart';
 import '../engine/prize_engine.dart';
@@ -9,6 +10,9 @@ import 'result_page.dart';
 import 'scan_page.dart';
 import 'theme.dart';
 import 'widgets.dart';
+
+/// Número da build, injetado no CI via --dart-define=BUILD=<n>.
+const String _build = String.fromEnvironment('BUILD', defaultValue: 'dev');
 
 /// Campos editáveis de UMA aposta.
 class _BetFields {
@@ -72,6 +76,32 @@ class _HomePageState extends State<HomePage> {
       MaterialPageRoute(builder: (_) => ScanPage(fallbackGame: game)),
     );
     if (scan == null) return;
+    _applyScan(scan);
+  }
+
+  Future<void> _pickFromGallery() async {
+    final x = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 100);
+    if (x == null) return;
+    if (mounted) {
+      showDialog(context: context, barrierDismissible: false, builder: (_) =>
+          const Center(child: CircularProgressIndicator(color: santaGreen)));
+    }
+    final ocr = OcrService();
+    try {
+      final scan = await ocr.scanImage(x.path, fallbackGame: game);
+      if (mounted) Navigator.pop(context); // fecha o loading
+      _applyScan(scan);
+    } catch (_) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Não consegui ler a imagem. Tente outra foto.')));
+      }
+    } finally {
+      ocr.dispose();
+    }
+  }
+
+  void _applyScan(TicketScan scan) {
     setState(() {
       if (scan.game != null && scan.game != game) { game = scan.game!; }
       final c = cfg;
@@ -159,6 +189,12 @@ class _HomePageState extends State<HomePage> {
                     icon: const Icon(Icons.photo_camera),
                     label: const Text('Abrir câmara'),
                   ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: _pickFromGallery,
+                    icon: const Icon(Icons.photo_library),
+                    label: const Text('Escolher foto da galeria'),
+                  ),
                   const SizedBox(height: 6),
                   const Text('A leitura é feita no telemóvel (privada). Lê todas as apostas do talão — confirme sempre os números.',
                       style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
@@ -210,6 +246,9 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 24),
                 const Text('App não oficial. Confirme sempre em jogossantacasa.pt antes de reclamar.\nJogo para maiores de 18. Jogue com responsabilidade.',
                     textAlign: TextAlign.center, style: TextStyle(fontSize: 11, color: Color(0xFF9aa0a6))),
+                const SizedBox(height: 6),
+                const Text('EuroScanner · build $_build',
+                    textAlign: TextAlign.center, style: TextStyle(fontSize: 11, color: Color(0xFFb0b4b8))),
               ],
             ),
     );
