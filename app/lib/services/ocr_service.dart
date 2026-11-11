@@ -8,7 +8,8 @@ class TicketScan {
   String? game;
   String? date; // ISO yyyy-MM-dd
   List<Bet> bets;
-  TicketScan({this.game, this.date, List<Bet>? bets}) : bets = bets ?? [];
+  String rawText; // texto bruto do OCR (debug)
+  TicketScan({this.game, this.date, List<Bet>? bets, this.rawText = ''}) : bets = bets ?? [];
 }
 
 final _dateRe = RegExp(r'(\d{2})[\/\-.](\d{2})[\/\-.](\d{4})');
@@ -78,7 +79,7 @@ class OcrService {
     final dm = _dateRe.firstMatch(text);
     if (dm != null) date = '${dm.group(3)}-${dm.group(2)}-${dm.group(1)}';
 
-    final scan = TicketScan(game: game, date: date);
+    final scan = TicketScan(game: game, date: date, rawText: text);
     final cfg = kGames[game]!;
 
     if (cfg.isCode) {
@@ -113,7 +114,7 @@ class OcrService {
       final line = raw.trim();
       if (line.isEmpty) continue;
       final up = line.toUpperCase();
-      if (_dateRe.hasMatch(line) || RegExp(r'\b\d{4}\b').hasMatch(line)) continue;
+      if (_dateRe.hasMatch(line) || RegExp(r'\b(19|20)\d{2}\b').hasMatch(line)) continue;
       if (RegExp(r'AP\b|SIMPLES|SORT|AUT|TOTAL|M1L|VIRN|PAGAR|EURO|PAIS|CAUSAS').hasMatch(up)) continue;
 
       final hasE = RegExp(r'(^|[^A-Z])E([^A-Z]|$)').hasMatch(up);

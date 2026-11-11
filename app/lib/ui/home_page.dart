@@ -42,6 +42,7 @@ class _HomePageState extends State<HomePage> {
   int drawIndex = 0;
   bool loading = true;
   List<_BetFields> bets = [];
+  String? _lastOcr;
 
   @override
   void initState() {
@@ -103,6 +104,7 @@ class _HomePageState extends State<HomePage> {
 
   void _applyScan(TicketScan scan) {
     setState(() {
+      _lastOcr = scan.rawText;
       if (scan.game != null && scan.game != game) { game = scan.game!; }
       final c = cfg;
       _resetBets(scan.bets.isEmpty ? 1 : scan.bets.length);
@@ -232,6 +234,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                   ],
+                  if (_lastOcr != null) _ocrDebug(),
                   const SizedBox(height: 8),
                   FilledButton.icon(
                     style: FilledButton.styleFrom(backgroundColor: santaGreen),
@@ -317,6 +320,27 @@ class _HomePageState extends State<HomePage> {
             borderSide: const BorderSide(color: santaGreen, width: 2),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _ocrDebug() {
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: const EdgeInsets.only(bottom: 8),
+        title: Text('🔎 Texto lido ( ${bets.length} aposta${bets.length == 1 ? '' : 's'} ) — toque para ver/enviar',
+            style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: const Color(0xFFF5F5F5), borderRadius: BorderRadius.circular(8)),
+            child: SelectableText(_lastOcr == null || _lastOcr!.isEmpty ? '(vazio)' : _lastOcr!,
+                style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
+          ),
+        ],
       ),
     );
   }
