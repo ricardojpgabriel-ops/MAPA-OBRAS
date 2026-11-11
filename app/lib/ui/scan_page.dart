@@ -48,8 +48,7 @@ class _ScanPageState extends State<ScanPage> {
     setState(() => _busy = true);
     try {
       final file = await _cam!.takePicture();
-      final text = await _ocr.readText(file.path);
-      final scan = OcrService.parse(text, fallbackGame: widget.fallbackGame);
+      final scan = await _ocr.scanImage(file.path, fallbackGame: widget.fallbackGame);
       if (!mounted) return;
       Navigator.pop(context, scan);
     } catch (e) {

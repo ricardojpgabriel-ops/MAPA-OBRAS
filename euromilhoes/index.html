@@ -446,6 +446,8 @@ async function runOCR(imgUrl) {
     });
     bar.style.display = 'none';
     const parsed = parseTicket(data.text);
+    const trDate = topRightDate(data.words);
+    if (trDate) parsed.date = trDate;
     if (parsed.game && parsed.game !== currentGame) { currentGame = parsed.game; buildGames(); buildDrawSelect(); }
     buildBets();
     applyPrefillToFirstBet(parsed);
@@ -456,6 +458,27 @@ async function runOCR(imgUrl) {
     bar.style.display = 'none';
     status.textContent = 'Não consegui ler automaticamente. Introduza os números manualmente no passo 3.';
   }
+}
+
+// Escolhe a data mais "canto superior direito" a partir das palavras do OCR (com bbox)
+function topRightDate(words) {
+  if (!words || !words.length) return null;
+  const dre = /(\d{2})[\/\-.](\d{2})[\/\-.](\d{4})/;
+  let minX = Infinity, minY = Infinity, maxX = 0, maxY = 0;
+  for (const w of words) {
+    const b = w.bbox; if (!b) continue;
+    minX = Math.min(minX, b.x0); minY = Math.min(minY, b.y0);
+    maxX = Math.max(maxX, b.x1); maxY = Math.max(maxY, b.y1);
+  }
+  const spanX = (maxX - minX) || 1, spanY = (maxY - minY) || 1;
+  let best = null, bestScore = -1;
+  for (const w of words) {
+    const m = (w.text || '').match(dre); if (!m || !w.bbox) continue;
+    const cx = (w.bbox.x0 + w.bbox.x1) / 2, cy = (w.bbox.y0 + w.bbox.y1) / 2;
+    const score = (cx - minX) / spanX + (1 - (cy - minY) / spanY); // direita + topo
+    if (score > bestScore) { bestScore = score; best = `${m[3]}-${m[2]}-${m[1]}`; }
+  }
+  return best;
 }
 
 // Heurística de leitura do texto OCR
