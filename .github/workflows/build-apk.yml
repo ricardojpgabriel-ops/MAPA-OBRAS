@@ -41,13 +41,13 @@ jobs:
         working-directory: app
         run: flutter pub get
 
-      - name: Build APK (release, assinado com chave de debug para testes)
+      - name: Build APK (debug — instalável para testes, evita o R8 do ML Kit)
         working-directory: app
-        run: flutter build apk --release
+        run: flutter build apk --debug
 
       - name: Publicar APK como artefacto
         uses: actions/upload-artifact@v4
         with:
           name: scanner-taloes-apk
-          path: app/build/app/outputs/flutter-apk/app-release.apk
+          path: app/build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
