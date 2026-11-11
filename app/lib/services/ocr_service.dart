@@ -20,7 +20,6 @@ class OcrService {
   void dispose() => _recognizer.close();
 
   /// Lê a imagem e devolve o talão interpretado (jogo, data e TODAS as apostas).
-  /// A DATA é procurada preferencialmente no canto superior direito.
   Future<TicketScan> scanImage(String imagePath, {String fallbackGame = 'euromilhoes'}) async {
     final input = InputImage.fromFilePath(imagePath);
     final result = await _recognizer.processImage(input);
@@ -89,58 +88,76 @@ class OcrService {
     }
 
     scan.bets.addAll(_parseBets(text, cfg));
-    if (scan.bets.isEmpty) scan.bets.add(Bet()); // pelo menos uma linha editável
+    if (scan.bets.isEmpty) scan.bets.add(Bet());
     return scan;
   }
 
-  /// Extrai várias apostas. No talão da Santa Casa cada aposta tem uma linha de
-  /// números marcada com "N" e a seguir uma linha de estrelas marcada com "E".
+  /// Extrai várias apostas. Robusto a: marcadores N/E, linhas sem marcadores,
+  /// e números+estrelas na mesma linha (com ou sem índice "1." à frente).
   static List<Bet> _parseBets(String text, GameConfig cfg) {
     final lines = text.split(RegExp(r'[\r\n]+'));
     final bets = <Bet>[];
     List<int>? mains;
 
     List<int> numsIn(String s) => RegExp(r'\d{1,2}')
-        .allMatches(s)
-        .map((m) => int.parse(m.group(0)!))
-        .toList();
+        .allMatches(s).map((m) => int.parse(m.group(0)!)).toList();
 
-    // Texto a seguir ao marcador (N ou E), para ignorar o índice "1." / "E".
-    String afterMarker(String s, String marker) {
-      final m = RegExp('(^|[^A-Z])$marker([^A-Z]|\$)').firstMatch(s);
-      return m == null ? s : s.substring(m.end - 1);
+    String? afterMarker(String s, String mk) {
+      final r = RegExp('(^|[^A-Z])$mk([^A-Z]|\$)').firstMatch(s);
+      return r == null ? null : s.substring(r.end - 1);
     }
 
-    void flushOrphan() {
-      if (mains != null) { bets.add(Bet(nums: mains!, extra: [])); mains = null; }
-    }
+    void flush() { if (mains != null) { bets.add(Bet(nums: mains!, extra: [])); mains = null; } }
 
     for (final raw in lines) {
       final line = raw.trim();
       if (line.isEmpty) continue;
       final up = line.toUpperCase();
       if (_dateRe.hasMatch(line) || RegExp(r'\b\d{4}\b').hasMatch(line)) continue;
-      if (RegExp(r'AP\b|SIMPLES|SORT|AUT|TOTAL|M1L|VIRN').hasMatch(up)) continue;
+      if (RegExp(r'AP\b|SIMPLES|SORT|AUT|TOTAL|M1L|VIRN|PAGAR|EURO|PAIS|CAUSAS').hasMatch(up)) continue;
 
-      final isStar = RegExp(r'(^|[^A-Z])E([^A-Z]|$)').hasMatch(up);
-      final isMain = RegExp(r'(^|[^A-Z])N([^A-Z]|$)').hasMatch(up);
+      final hasE = RegExp(r'(^|[^A-Z])E([^A-Z]|$)').hasMatch(up);
+      final hasN = RegExp(r'(^|[^A-Z])N([^A-Z]|$)').hasMatch(up);
 
-      if (isStar && !isMain && mains != null) {
-        final extra = numsIn(afterMarker(up, 'E')).where((n) => n >= 1 && n <= cfg.extraMax).take(cfg.extraCount).toList();
+      if (hasN) {
+        final mn = numsIn(afterMarker(up, 'N') ?? '').where((n) => n >= 1 && n <= cfg.numMax).toList();
+        var extra = <int>[];
+        if (hasE) {
+          final ea = afterMarker(up, 'E');
+          if (ea != null) extra = numsIn(ea).where((n) => n >= 1 && n <= cfg.extraMax).take(cfg.extraCount).toList();
+        }
+        if (mn.length >= cfg.nums) {
+          flush();
+          mains = mn.take(cfg.nums).toList();
+          if (extra.isNotEmpty) { bets.add(Bet(nums: mains!, extra: extra)); mains = null; }
+        }
+        continue;
+      }
+      if (hasE && mains != null) {
+        final extra = numsIn(afterMarker(up, 'E') ?? up).where((n) => n >= 1 && n <= cfg.extraMax).take(cfg.extraCount).toList();
         bets.add(Bet(nums: mains!, extra: extra));
         mains = null;
-      } else if (isMain) {
-        final mn = numsIn(afterMarker(up, 'N')).where((n) => n >= 1 && n <= cfg.numMax).toList();
-        if (mn.length >= cfg.nums) { flushOrphan(); mains = mn.take(cfg.nums).toList(); }
-      } else {
-        // linha sem marcador: tenta como números se tiver quantidade suficiente
-        final mn = numsIn(up).where((n) => n >= 1 && n <= cfg.numMax).toList();
-        if (mn.length >= cfg.nums && mains == null) mains = mn.take(cfg.nums).toList();
+        continue;
+      }
+
+      // sem marcadores
+      var ns = numsIn(up);
+      if (ns.length == cfg.nums + 1 || ns.length == cfg.nums + cfg.extraCount + 1) {
+        if (ns[0] <= bets.length + 1 || ns[0] <= 9) ns = ns.sublist(1);
+      }
+      final mainPart = ns.take(cfg.nums).where((n) => n >= 1 && n <= cfg.numMax).toList();
+      if (mainPart.length >= cfg.nums) {
+        flush();
+        mains = mainPart;
+        final rest = ns.skip(cfg.nums).where((n) => n >= 1 && n <= cfg.extraMax).take(cfg.extraCount).toList();
+        if (rest.length >= cfg.extraCount) { bets.add(Bet(nums: mains!, extra: rest)); mains = null; }
+      } else if (mains != null && ns.length <= cfg.extraCount && ns.every((n) => n <= cfg.extraMax)) {
+        bets.add(Bet(nums: mains!, extra: ns.take(cfg.extraCount).toList()));
+        mains = null;
       }
     }
-    flushOrphan();
+    flush();
 
-    // Recurso: sem marcadores N/E legíveis, tenta uma única aposta pela ordem.
     if (bets.isEmpty) {
       final pool = numsIn(text).where((n) => n >= 1 && n <= 50).toList();
       final nums = <int>[], extra = <int>[];

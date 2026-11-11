@@ -49,26 +49,25 @@ jobs:
         working-directory: app
         run: flutter build apk --debug --build-number=${{ github.run_number }} --dart-define=BUILD=${{ github.run_number }}
 
-      - name: Preparar APK com nome final
-        run: cp app/build/app/outputs/flutter-apk/app-debug.apk EuroScanner.apk
+      - name: Preparar APK com nome único (evita cache do browser)
+        run: cp app/build/app/outputs/flutter-apk/app-debug.apk EuroScanner-${{ github.run_number }}.apk
 
       - name: Publicar APK como artefacto
         uses: actions/upload-artifact@v4
         with:
           name: euroscanner-apk
-          path: EuroScanner.apk
+          path: EuroScanner-${{ github.run_number }}.apk
           if-no-files-found: error
 
-      - name: Publicar Release com link direto do APK
+      - name: Publicar Release com link direto do APK (tag única por build)
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: apk-latest
-          name: EuroScanner — APK de teste
+          tag_name: build-${{ github.run_number }}
+          name: EuroScanner — build ${{ github.run_number }}
           body: |
-            APK de teste do EuroScanner (debug, instalável em Android).
-            Descarrega o ficheiro **EuroScanner.apk** em baixo e instala no telemóvel
-            (ativa "instalar de fontes desconhecidas" quando pedido).
-            Compilado a partir do commit ${{ github.sha }}.
+            APK de teste do EuroScanner — build ${{ github.run_number }} (debug, Android).
+            Descarrega **EuroScanner-${{ github.run_number }}.apk** e instala no telemóvel.
+            No rodapé da app deve ler-se "build ${{ github.run_number }}".
           prerelease: true
-          files: EuroScanner.apk
+          files: EuroScanner-${{ github.run_number }}.apk
           fail_on_unmatched_files: true
