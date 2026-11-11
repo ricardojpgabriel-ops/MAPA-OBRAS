@@ -27,6 +27,28 @@
             "2+1": "€ 5,97",
             "2+0": "€ 4,30"
           }
+        },
+        {
+          "id": "081/2026",
+          "date": "2026-10-09",
+          "numbers": [5, 20, 24, 31, 45],
+          "stars": [5, 10],
+          "nota": "Chave confirmada; valores por categoria a confirmar no site oficial.",
+          "tiers": {
+            "5+2": "Jackpot (1.º Prémio) — sem vencedor",
+            "5+1": "Premiado (confirmar valor em jogossantacasa.pt)",
+            "5+0": "Premiado (confirmar valor em jogossantacasa.pt)",
+            "4+2": "Premiado (confirmar valor em jogossantacasa.pt)",
+            "4+1": "Premiado (confirmar valor em jogossantacasa.pt)",
+            "3+2": "Premiado (confirmar valor em jogossantacasa.pt)",
+            "4+0": "Premiado (confirmar valor em jogossantacasa.pt)",
+            "2+2": "Premiado (confirmar valor em jogossantacasa.pt)",
+            "3+1": "Premiado (confirmar valor em jogossantacasa.pt)",
+            "3+0": "Premiado (confirmar valor em jogossantacasa.pt)",
+            "1+2": "Premiado (confirmar valor em jogossantacasa.pt)",
+            "2+1": "Premiado (confirmar valor em jogossantacasa.pt)",
+            "2+0": "Premiado (confirmar valor em jogossantacasa.pt)"
+          }
         }
       ]
     },
