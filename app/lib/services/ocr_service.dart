@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
 import '../data/game_config.dart';
 import '../engine/prize_engine.dart';
@@ -11,7 +13,8 @@ class TicketScan {
   String? date; // ISO yyyy-MM-dd
   List<Bet> bets;
   String rawText; // texto bruto do OCR (debug)
-  TicketScan({this.game, this.date, List<Bet>? bets, this.rawText = ''}) : bets = bets ?? [];
+  String engine; // "nuvem" | "telemóvel"
+  TicketScan({this.game, this.date, List<Bet>? bets, this.rawText = '', this.engine = 'telemóvel'}) : bets = bets ?? [];
 }
 
 final _dateRe = RegExp(r'(\d{2})[\/\-.](\d{2})[\/\-.](\d{4})');
@@ -28,16 +31,56 @@ class OcrService {
 
   void dispose() => _recognizer.close();
 
-  /// Lê a imagem (com pré-processamento) e devolve o talão interpretado.
-  Future<TicketScan> scanImage(String imagePath, {String fallbackGame = 'euromilhoes'}) async {
+  /// Indica qual o motor usado na última leitura ("nuvem" ou "telemóvel").
+  String lastEngine = 'telemóvel';
+
+  /// Lê a imagem. Se houver chave Google Vision, usa a nuvem (mais precisa);
+  /// caso contrário usa o ML Kit no telemóvel (com pré-processamento).
+  Future<TicketScan> scanImage(String imagePath, {String fallbackGame = 'euromilhoes', String? apiKey}) async {
+    if (apiKey != null && apiKey.trim().isNotEmpty) {
+      final txt = await _googleVision(imagePath, apiKey.trim());
+      if (txt != null && txt.trim().isNotEmpty) {
+        lastEngine = 'nuvem';
+        final scan = parse(txt, fallbackGame: fallbackGame);
+        scan.engine = 'nuvem';
+        return scan;
+      }
+    }
+    lastEngine = 'telemóvel';
     final pp = _preprocess(imagePath);
     final usePath = pp ?? imagePath;
     final input = InputImage.fromFilePath(usePath);
     final result = await _recognizer.processImage(input);
     final scan = parse(result.text, fallbackGame: fallbackGame);
+    scan.engine = 'telemóvel';
     final dr = _topRightDate(result);
     if (dr != null) scan.date = dr;
     return scan;
+  }
+
+  /// Google Cloud Vision — DOCUMENT_TEXT_DETECTION (ótimo para talões).
+  Future<String?> _googleVision(String imagePath, String apiKey) async {
+    try {
+      final b64 = base64Encode(File(imagePath).readAsBytesSync());
+      final res = await http.post(
+        Uri.parse('https://vision.googleapis.com/v1/images:annotate?key=$apiKey'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'requests': [
+            {
+              'image': {'content': b64},
+              'features': [{'type': 'DOCUMENT_TEXT_DETECTION'}],
+              'imageContext': {'languageHints': ['pt']}
+            }
+          ]
+        }),
+      ).timeout(const Duration(seconds: 25));
+      if (res.statusCode != 200) return null;
+      final j = jsonDecode(res.body);
+      return j['responses']?[0]?['fullTextAnnotation']?['text'] as String?;
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Cinzento + contraste + ampliação: ajuda muito com papel térmico.

@@ -6,7 +6,8 @@ import 'theme.dart';
 
 class ScanPage extends StatefulWidget {
   final String fallbackGame;
-  const ScanPage({super.key, required this.fallbackGame});
+  final String? apiKey;
+  const ScanPage({super.key, required this.fallbackGame, this.apiKey});
   @override
   State<ScanPage> createState() => _ScanPageState();
 }
@@ -48,7 +49,7 @@ class _ScanPageState extends State<ScanPage> {
     setState(() => _busy = true);
     try {
       final file = await _cam!.takePicture();
-      final scan = await _ocr.scanImage(file.path, fallbackGame: widget.fallbackGame);
+      final scan = await _ocr.scanImage(file.path, fallbackGame: widget.fallbackGame, apiKey: widget.apiKey);
       if (!mounted) return;
       Navigator.pop(context, scan);
     } catch (e) {

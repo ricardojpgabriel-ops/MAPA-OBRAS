@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../data/game_config.dart';
 import '../engine/prize_engine.dart';
 import '../services/ocr_service.dart';
@@ -43,12 +44,54 @@ class _HomePageState extends State<HomePage> {
   bool loading = true;
   List<_BetFields> bets = [];
   String? _lastOcr;
+  String? _apiKey;
 
   @override
   void initState() {
     super.initState();
     _resetBets();
+    _loadKey();
     _load();
+  }
+
+  Future<void> _loadKey() async {
+    final p = await SharedPreferences.getInstance();
+    setState(() => _apiKey = p.getString('gvision_key'));
+  }
+
+  Future<void> _openSettings() async {
+    final ctrl = TextEditingController(text: _apiKey ?? '');
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Leitura avançada (nuvem)'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Text('Cola aqui a tua chave da API Google Vision. '
+              'Com chave, a leitura do talão é feita na nuvem (mais precisa). '
+              'Sem chave, usa o telemóvel.',
+              style: TextStyle(fontSize: 13)),
+          const SizedBox(height: 12),
+          TextField(
+            controller: ctrl,
+            decoration: const InputDecoration(labelText: 'Chave Google Vision', border: OutlineInputBorder()),
+          ),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Guardar')),
+        ],
+      ),
+    );
+    if (saved == true) {
+      final p = await SharedPreferences.getInstance();
+      final k = ctrl.text.trim();
+      if (k.isEmpty) { await p.remove('gvision_key'); } else { await p.setString('gvision_key', k); }
+      setState(() => _apiKey = k.isEmpty ? null : k);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(k.isEmpty ? 'Leitura avançada desligada.' : 'Leitura avançada ligada (nuvem).')));
+      }
+    }
   }
 
   GameConfig get cfg => kGames[game]!;
@@ -74,7 +117,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _scan() async {
     final scan = await Navigator.push<TicketScan>(
       context,
-      MaterialPageRoute(builder: (_) => ScanPage(fallbackGame: game)),
+      MaterialPageRoute(builder: (_) => ScanPage(fallbackGame: game, apiKey: _apiKey)),
     );
     if (scan == null) return;
     _applyScan(scan);
@@ -89,7 +132,7 @@ class _HomePageState extends State<HomePage> {
     }
     final ocr = OcrService();
     try {
-      final scan = await ocr.scanImage(x.path, fallbackGame: game);
+      final scan = await ocr.scanImage(x.path, fallbackGame: game, apiKey: _apiKey);
       if (mounted) Navigator.pop(context); // fecha o loading
       _applyScan(scan);
     } catch (_) {
@@ -125,7 +168,7 @@ class _HomePageState extends State<HomePage> {
     if (mounted) {
       final n = scan.bets.length;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Li $n aposta${n == 1 ? '' : 's'} — confirme os números antes de verificar.'),
+        content: Text('Li $n aposta${n == 1 ? '' : 's'} (${scan.engine}) — confirme os números antes de verificar.'),
       ));
     }
   }
@@ -159,6 +202,11 @@ class _HomePageState extends State<HomePage> {
         foregroundColor: Colors.white,
         title: const Text('EuroScanner · b$_build', style: TextStyle(fontWeight: FontWeight.w800)),
         actions: [
+          IconButton(
+            onPressed: _openSettings,
+            icon: Icon(_apiKey != null ? Icons.cloud_done : Icons.cloud_outlined),
+            tooltip: 'Leitura avançada (nuvem)',
+          ),
           IconButton(onPressed: loading ? null : () => _load(force: true), icon: const Icon(Icons.refresh), tooltip: 'Atualizar resultados'),
         ],
       ),
