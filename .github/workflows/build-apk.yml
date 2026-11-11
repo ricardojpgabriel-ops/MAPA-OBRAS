@@ -1,0 +1,73 @@
+name: Compilar APK (Android)
+
+# Gera um APK de teste a partir do código Flutter em /app.
+# Corre quando há alterações na app ou manualmente (Actions → Run workflow).
+on:
+  push:
+    branches: ['**']
+    paths:
+      - 'app/**'
+      - '.github/workflows/build-apk.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Gerar plataforma Android (não toca no lib/ existente)
+        working-directory: app
+        run: flutter create --platforms=android --org com.scannertaloes --project-name scanner_taloes .
+
+      - name: Nome e permissão de câmara no Manifest
+        working-directory: app
+        run: |
+          MAN=android/app/src/main/AndroidManifest.xml
+          grep -q 'android.permission.CAMERA' "$MAN" || \
+            sed -i 's#<application#<uses-permission android:name="android.permission.CAMERA"/>\n    <application#' "$MAN"
+          sed -i 's#android:label="[^"]*"#android:label="EuroScanner"#' "$MAN"
+          cat "$MAN"
+
+      - name: Dependências
+        working-directory: app
+        run: flutter pub get
+
+      - name: Build APK (debug — instalável para testes, evita o R8 do ML Kit)
+        working-directory: app
+        run: flutter build apk --debug --build-number=${{ github.run_number }} --dart-define=BUILD=${{ github.run_number }}
+
+      - name: Preparar APK com nome único (evita cache do browser)
+        run: cp app/build/app/outputs/flutter-apk/app-debug.apk EuroScanner-${{ github.run_number }}.apk
+
+      - name: Publicar APK como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: euroscanner-apk
+          path: EuroScanner-${{ github.run_number }}.apk
+          if-no-files-found: error
+
+      - name: Publicar Release com link direto do APK (tag única por build)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: EuroScanner — build ${{ github.run_number }}
+          body: |
+            APK de teste do EuroScanner — build ${{ github.run_number }} (debug, Android).
+            Descarrega **EuroScanner-${{ github.run_number }}.apk** e instala no telemóvel.
+            No rodapé da app deve ler-se "build ${{ github.run_number }}".
+          prerelease: true
+          files: EuroScanner-${{ github.run_number }}.apk
+          fail_on_unmatched_files: true

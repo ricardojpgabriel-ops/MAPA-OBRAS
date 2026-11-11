@@ -1,0 +1,40 @@
+name: Atualizar resultados Santa Casa
+
+# Corre depois dos sorteios (hora de Portugal) e permite execução manual.
+# Sorteios: Euromilhões Ter/Sex, Totoloto Qua/Sáb, EuroDreams Seg/Qui, M1lhão Sex.
+on:
+  schedule:
+    - cron: '30 22 * * *'   # 22:30 UTC ~ 23:30 PT, após os sorteios
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Recolher resultados
+        env:
+          FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+        run: node scripts/scrape-santacasa.mjs
+
+      - name: Commit se houver alterações
+        run: |
+          git config user.name "santacasa-bot"
+          git config user.email "bot@users.noreply.github.com"
+          if ! git diff --quiet euromilhoes/resultados.json; then
+            git add euromilhoes/resultados.json
+            git commit -m "chore: atualizar resultados ($(date -u +%Y-%m-%d))"
+            git push
+          else
+            echo "Sem alterações nos resultados."
+          fi
